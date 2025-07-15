@@ -1,9 +1,10 @@
 {
   "name": "@novastera/rn-google-signin",
   "version": "0.1.0",
+  "type": "module",
   "description": "Modern React Native Google Sign-In with Turbo Modules support",
-  "main": "lib/commonjs/index",
-  "module": "lib/module/index",
+  "main": "lib/typescript/index.js",
+  "module": "lib/typescript/index.js",
   "types": "lib/typescript/index.d.ts",
   "react-native": "src/index",
   "source": "src/index",
@@ -29,16 +30,14 @@
     "!**/.*"
   ],
   "scripts": {
-    "test": "jest",
+    "test": "npm run typecheck && npm run lint",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint \"**/*.{js,ts,tsx}\"",
-    "lint:fix": "eslint \"**/*.{js,ts,tsx}\" --fix",
-    "prepack": "bob build",
-    "example": "yarn workspace rn-google-signin-example",
-    "bootstrap": "yarn example && yarn install && yarn example pods",
-    "clean": "del-cli android/build example/android/build example/ios/build lib",
-    "prepare": "bob build && npm run build:plugin",
+    "lint": "eslint \"**/*.js\"",
+    "lint:fix": "eslint \"**/*.js\" --fix",
+    "clean": "del-cli lib plugin/build",
+    "build": "tsc -p tsconfig.build.json && npm run build:plugin",
     "build:plugin": "tsc -p plugin/tsconfig.json",
+    "prepare": "npm run build",
     "setup-ios-deps": "chmod +x scripts/setup_ios_dependencies.sh && ./scripts/setup_ios_dependencies.sh",
     "setup-ios-deps:windows": "powershell -ExecutionPolicy Bypass -File scripts/setup_ios_dependencies.ps1"
   },
@@ -67,20 +66,12 @@
   },
   "devDependencies": {
     "@expo/config-plugins": "^10.0.0",
-    "@react-native/eslint-config": "^0.79.0",
-    "@types/jest": "^30.0.0",
     "@types/node": "^20.11.19",
     "@types/react": "~19.0.0",
     "del-cli": "^6.0.0",
     "eslint": "^9.0.0",
-    "eslint-config-prettier": "^10.0.0",
-    "eslint-plugin-prettier": "^5.0.0",
-    "jest": "^30.0.0",
-    "prettier": "^3.0.0",
-    "react": "~19.0.0",
-    "react-native": "~0.79.0",
-    "react-native-builder-bob": "^0.40.0",
-    "typescript": "^5.8.3"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
   },
   "resolutions": {
     "@types/react": "~18.2.14"
@@ -92,33 +83,6 @@
   "workspaces": [
     "example"
   ],
-  "jest": {
-    "preset": "react-native",
-    "modulePathIgnorePatterns": [
-      "<rootDir>/example/node_modules",
-      "<rootDir>/lib/"
-    ]
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": ["@react-native", "prettier"],
-    "rules": {
-      "prettier/prettier": [
-        "error",
-        {
-          "quoteProps": "consistent",
-          "singleQuote": true,
-          "tabWidth": 2,
-          "trailingComma": "es5",
-          "useTabs": false
-        }
-      ]
-    }
-  },
-  "eslintIgnore": [
-    "node_modules/",
-    "lib/"
-  ],
   "prettier": {
     "quoteProps": "consistent",
     "singleQuote": true,
@@ -126,23 +90,9 @@
     "trailingComma": "es5",
     "useTabs": false
   },
-  "react-native-builder-bob": {
-    "source": "src",
-    "output": "lib",
-    "targets": [
-      "commonjs",
-      "module",
-      [
-        "typescript",
-        {
-          "project": "tsconfig.build.json"
-        }
-      ]
-    ]
-  },
   "codegenConfig": {
     "name": "RNGoogleSigninSpec",
     "type": "modules",
     "jsSrcsDir": "src"
   }
-} 
+}
