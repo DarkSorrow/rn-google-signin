@@ -251,11 +251,17 @@ jobs:
             exit 1
           fi
           
-          # Check build.gradle reads dependencies.json correctly
-          if ! grep -q "dependencies.json" android/build.gradle; then
-            echo "❌ Android build.gradle doesn't read from dependencies.json!"
-            exit 1
-          fi
+                  # Check build.gradle uses proper dependency management (gradle.properties or safeExtGet)
+        if ! grep -q "safeExtGet" android/build.gradle; then
+          echo "❌ Android build.gradle doesn't use proper dependency management!"
+          exit 1
+        fi
+        
+        # Check gradle.properties exists for Android dependency versions
+        if [[ ! -f "gradle.properties" ]]; then
+          echo "❌ gradle.properties not found! Required for Android dependency versions."
+          exit 1
+        fi
           
           echo "✅ Android setup validated"
 
