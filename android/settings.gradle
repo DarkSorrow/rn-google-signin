@@ -1,0 +1,4 @@
+rootProject.name = 'RNGoogleSignin'
+
+include ':rn-google-signin'
+project(':rn-google-signin').projectDir = new File(rootDir, './') 
