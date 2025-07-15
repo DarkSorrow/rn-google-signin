@@ -1,4 +1,4 @@
-# Contributing to @novastera/rn-google-signin
+# Contributing to @novastera-oss/rn-google-signin
 
 Thank you for your interest in contributing to this React Native Google Sign-In package! We welcome contributions from the community.
 
@@ -70,7 +70,7 @@ By participating in this project, you agree to abide by our Code of Conduct:
 ```
 rn-google-signin/
 ├── src/                          # TypeScript source code
-│   ├── GoogleSignin.ts          # Main API wrapper
+│   ├── GoogleSignIn.ts          # Main API wrapper
 │   ├── NativeGoogleSignin.ts    # Turbo Module specification
 │   ├── types.ts                 # TypeScript type definitions
 │   └── index.ts                 # Public API exports
@@ -92,7 +92,7 @@ rn-google-signin/
 
 ### Key Files
 
-- **`src/GoogleSignin.ts`**: Main API implementation
+- **`src/GoogleSignIn.ts`**: Main API implementation
 - **`src/NativeGoogleSignin.ts`**: Turbo Module interface
 - **`android/src/main/java/.../RNGoogleSigninModule.kt`**: Android implementation
 - **`ios/RNGoogleSignin.swift`**: iOS implementation

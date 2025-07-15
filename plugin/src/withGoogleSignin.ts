@@ -1,11 +1,11 @@
 import {
   AndroidConfig,
-  ConfigPlugin,
   createRunOncePlugin,
   withAndroidManifest,
   withInfoPlist,
   withPlugins,
 } from '@expo/config-plugins';
+import type { ConfigPlugin } from '@expo/config-plugins';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 

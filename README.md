@@ -1,8 +1,6 @@
-# @novastera/rn-google-signin
+# @novastera-oss/rn-google-signin
 
 Modern React Native Google Sign-In with Turbo Modules support for the new architecture.
-
-> **Note**: This package was created to address specific security and architectural requirements. The excellent `@react-native-google-signin/google-signin` library offers many more features and premium functionality. If you're using their premium features, please continue supporting their work.
 
 [![npm version](https://badge.fury.io/js/%40novastera%2Frn-google-signin.svg)](https://badge.fury.io/js/%40novastera%2Frn-google-signin)
 [![React Native](https://img.shields.io/badge/React%20Native-0.79%2B-blue)](https://reactnative.dev/)
@@ -17,7 +15,7 @@ Modern React Native Google Sign-In with Turbo Modules support for the new archit
 - ✅ **Expo Compatible** - Works with Expo managed workflow via config plugin
 - ✅ **iOS & Android** - Full platform support
 - ✅ **Secure** - Follows Google's latest security best practices
-- ✅ **Well Documented** - Comprehensive guides and API reference
+- ✅ **Well Documented** - Comprehensive guides and API reference (WIP)
 - ✅ **Centralized Dependencies** - Single source of truth for all versions
 - ✅ **Git Submodules** - Efficient iOS SDK management
 
@@ -36,13 +34,13 @@ Modern React Native Google Sign-In with Turbo Modules support for the new archit
 ## Installation
 
 ```bash
-npm install @novastera/rn-google-signin
+npm install @novastera-oss/rn-google-signin
 ```
 
 or
 
 ```bash
-yarn add @novastera/rn-google-signin
+yarn add @novastera-oss/rn-google-signin
 ```
 
 ## Configuration
@@ -118,7 +116,7 @@ yarn add @novastera/rn-google-signin
 Install the package and configure the plugin:
 
 ```bash
-npx expo install @novastera/rn-google-signin
+npx expo install @novastera-oss/rn-google-signin
 ```
 
 Add the plugin to your `app.config.js`:
@@ -129,7 +127,7 @@ export default {
     // ... your existing config
     plugins: [
       [
-        "@novastera/rn-google-signin",
+        "@novastera-oss/rn-google-signin",
         {
           iosClientId: "YOUR_IOS_CLIENT_ID.apps.googleusercontent.com",
           androidClientId: "YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com",
@@ -153,7 +151,7 @@ npx expo run:android
 ### Basic Setup
 
 ```typescript
-import GoogleSignIn, { GoogleSignInConfig } from '@novastera/rn-google-signin';
+import GoogleSignIn, { GoogleSignInConfig } from '@novastera-oss/rn-google-signin';
 
 const config: GoogleSignInConfig = {
   webClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
@@ -168,7 +166,7 @@ await GoogleSignIn.configure(config);
 ### Sign In
 
 ```typescript
-import GoogleSignIn, { GoogleSignInUser } from '@novastera/rn-google-signin';
+import GoogleSignIn, { GoogleSignInUser } from '@novastera-oss/rn-google-signin';
 
 const handleSignIn = async () => {
   try {
@@ -238,7 +236,7 @@ import GoogleSignIn, {
   GoogleSignInUser, 
   GoogleSignInConfig,
   statusCodes 
-} from '@novastera/rn-google-signin';
+} from '@novastera-oss/rn-google-signin';
 
 const App = () => {
   const [user, setUser] = useState<GoogleSignInUser | null>(null);
@@ -420,7 +418,7 @@ Clear cached access token (Android only).
 ### Error Handling
 
 ```typescript
-import { statusCodes, GoogleSignInError } from '@novastera/rn-google-signin';
+import { statusCodes, GoogleSignInError } from '@novastera-oss/rn-google-signin';
 
 // Status codes
 statusCodes.SIGN_IN_CANCELLED      // User cancelled
@@ -436,9 +434,7 @@ class GoogleSignInError extends Error {
 
 ## Migration from react-native-google-signin
 
-This package was created to address specific production security requirements where updating to newer Google Identity Services was necessary. The `@react-native-google-signin/google-signin` library offers many advanced features and premium functionality that this package does not provide.
-
-**Important Note**: If you're using the premium features of `@react-native-google-signin/google-signin`, you should continue using that library as it provides much more comprehensive functionality. This package focuses solely on basic Google Sign-In implementation.
+This package was created to address specific production security requirements where updating to newer Google Identity Services was necessary. If you're using premium features from `@react-native-google-signin/google-signin`, that library may be a better fit as it provides more functionalities.
 
 ### When to Consider This Package:
 
@@ -463,7 +459,7 @@ This package was created to address specific production security requirements wh
 
 2. **Install this package**:
    ```bash
-   npm install @novastera/rn-google-signin
+   npm install @novastera-oss/rn-google-signin
    ```
 
 3. **Update imports**:
@@ -472,7 +468,7 @@ This package was created to address specific production security requirements wh
    import { GoogleSignin } from '@react-native-google-signin/google-signin';
    
    // After
-   import GoogleSignIn from '@novastera/rn-google-signin';
+   import GoogleSignIn from '@novastera-oss/rn-google-signin';
    ```
 
 4. **Update method calls** (if using the old class-based API):

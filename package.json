@@ -1,13 +1,20 @@
 {
-  "name": "@novastera/rn-google-signin",
+  "name": "@novastera-oss/rn-google-signin",
   "version": "0.1.0",
-  "type": "module",
   "description": "Modern React Native Google Sign-In with Turbo Modules support",
-  "main": "lib/typescript/index.js",
-  "module": "lib/typescript/index.js",
-  "types": "lib/typescript/index.d.ts",
+  "main": "./lib/module/index.js",
+  "module": "./lib/module/index.js",
+  "types": "./lib/typescript/src/index.d.ts",
   "react-native": "src/index",
   "source": "src/index",
+  "exports": {
+    ".": {
+      "source": "./src/index.tsx",
+      "types": "./lib/typescript/src/index.d.ts",
+      "default": "./lib/module/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "src",
     "lib",
@@ -17,6 +24,7 @@
     "*.podspec",
     "dependencies.json",
     "plugin",
+    "app.plugin.js",
     "scripts",
     "!ios/build",
     "!android/build",
@@ -35,9 +43,9 @@
     "lint": "eslint \"**/*.js\"",
     "lint:fix": "eslint \"**/*.js\" --fix",
     "clean": "del-cli lib plugin/build",
-    "build": "tsc -p tsconfig.build.json && npm run build:plugin",
+    "build": "bob build && npm run build:plugin",
     "build:plugin": "tsc -p plugin/tsconfig.json",
-    "prepare": "npm run build",
+    "prepare": "bob build && npm run build:plugin",
     "setup-ios-deps": "chmod +x scripts/setup_ios_dependencies.sh && ./scripts/setup_ios_dependencies.sh",
     "setup-ios-deps:windows": "powershell -ExecutionPolicy Bypass -File scripts/setup_ios_dependencies.ps1"
   },
@@ -70,6 +78,7 @@
     "@types/react": "~19.0.0",
     "del-cli": "^6.0.0",
     "eslint": "^9.0.0",
+    "react-native-builder-bob": "^0.40.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   },
@@ -94,5 +103,16 @@
     "name": "RNGoogleSigninSpec",
     "type": "modules",
     "jsSrcsDir": "src"
+  },
+  "expo": {
+    "plugin": "./app.plugin.js"
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      ["module", { "esm": true }],
+      "typescript"
+    ]
   }
 }
