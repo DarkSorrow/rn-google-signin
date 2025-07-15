@@ -116,4 +116,15 @@ dependencies {
   implementation "androidx.credentials:credentials:${getGoogleDepVersion('credentials', '1.2.2')}"
   implementation "androidx.credentials:credentials-play-services-auth:${getGoogleDepVersion('credentialsPlayServicesAuth', '1.2.2')}"
   implementation "com.google.android.libraries.identity.googleid:googleid:${getGoogleDepVersion('googleId', '1.1.0')}"
+}
+
+// Fix task dependency issue
+android.libraryVariants.all { variant ->
+  def variantName = variant.name.capitalize()
+  def generateResValuesTask = project.tasks.findByName("generate${variantName}ResValues")
+  def packageResourcesTask = project.tasks.findByName("package${variantName}Resources")
+  
+  if (generateResValuesTask != null && packageResourcesTask != null) {
+    packageResourcesTask.dependsOn(generateResValuesTask)
+  }
 } 
