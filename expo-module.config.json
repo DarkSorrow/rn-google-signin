@@ -4,8 +4,8 @@
     "android"
   ],
   "ios": {
-    "modules": ["RNGoogleSigninModule"],
-    "appDelegateSubscribers": ["RNGoogleSigninModule"],
+    "modules": ["RCTNativeGoogleSignin"],
+    "appDelegateSubscribers": ["RCTNativeGoogleSignin"],
     "infoPlist": {
       "GIDClientID": "string"
     }
@@ -15,6 +15,13 @@
     "package": "com.novastera.rngooglesignin",
     "buildFeatures": {
       "buildConfig": true
+    },
+    "gradleProperties": {
+      "newArchEnabled": "true"
     }
+  },
+  "plugin": {
+    "name": "rn-google-signin",
+    "platforms": ["ios", "android"]
   }
 } 

@@ -13,6 +13,9 @@
       "sourceDir": "ios"
     }
   },
+  "expo": {
+    "plugin": "./app.plugin.js"
+  },
   "source": "src/index",
   "exports": {
     ".": {
@@ -35,7 +38,6 @@
     "app.plugin.js",
     "expo-module.config.json",
     "plugin/build",
-    "react-native.config.js",
     "README.md"
   ],
   "scripts": {

@@ -14,10 +14,10 @@ apply plugin: 'com.android.library'
 apply plugin: 'org.jetbrains.kotlin.android'
 
 android {
-  def agpVersion = com.android.Version.ANDROID_GRADLE_PLUGIN_VERSION
-  if (agpVersion.tokenize('.')[0].toInteger() >= 7) {
-    namespace "com.novastera.rngooglesignin"
-  }
+  namespace "com.novastera.rngooglesignin"
+  
+  // Ensure consistent package naming for Turbo Modules
+  group = "com.novastera.rngooglesignin"
   
   buildFeatures {
     buildConfig true
@@ -75,5 +75,79 @@ dependencies {
   implementation "com.google.android.libraries.identity.googleid:googleid:${safeExtGet('googleIdVersion', '1.1.0')}"
 }
 
-// Turbo Modules don't need complex task dependencies
-// The build system handles codegen automatically
+// Fix Gradle task dependency issues for React Native autolinking
+afterEvaluate {
+  // Fix resource packaging dependencies - handle naming inconsistencies
+  tasks.matching { task ->
+    task.name.contains("packageDebugResources")
+  }.configureEach { task ->
+    // Try multiple possible task names due to naming inconsistencies
+    def possibleResValuesTasks = [
+      "generateDebugResValues",
+      "generateDebugResValuesDebug",
+      "generateDebugResValuesRelease"
+    ]
+    
+    def resValuesTask = null
+    for (def taskName : possibleResValuesTasks) {
+      resValuesTask = tasks.findByName(taskName)
+      if (resValuesTask != null) break
+    }
+    
+    if (resValuesTask == null) {
+      // Try to find by pattern if exact name doesn't work
+      def resTasks = tasks.findAll { it.name.contains("generateDebugResValues") }
+      if (!resTasks.isEmpty()) {
+        resValuesTask = resTasks.first()
+      }
+    }
+    
+    if (resValuesTask != null) {
+      task.dependsOn(resValuesTask)
+    }
+  }
+  
+  tasks.matching { task ->
+    task.name.contains("packageReleaseResources")
+  }.configureEach { task ->
+    // Try multiple possible task names due to naming inconsistencies
+    def possibleResValuesTasks = [
+      "generateReleaseResValues",
+      "generateReleaseResValuesDebug",
+      "generateReleaseResValuesRelease"
+    ]
+    
+    def resValuesTask = null
+    for (def taskName : possibleResValuesTasks) {
+      resValuesTask = tasks.findByName(taskName)
+      if (resValuesTask != null) break
+    }
+    
+    if (resValuesTask == null) {
+      // Try to find by pattern if exact name doesn't work
+      def resTasks = tasks.findAll { it.name.contains("generateReleaseResValues") }
+      if (!resTasks.isEmpty()) {
+        resValuesTask = resTasks.first()
+      }
+    }
+    
+    if (resValuesTask != null) {
+      task.dependsOn(resValuesTask)
+    }
+  }
+  
+  // Fix codegen task dependencies for React Native New Architecture
+  if (isNewArchitectureEnabled()) {
+    tasks.matching { task ->
+      task.name.contains("generateCodegenArtifactsFromSchema")
+    }.configureEach { task ->
+      // Find the corresponding schema task
+      def schemaTaskName = task.name.replace("generateCodegenArtifactsFromSchema", "generateCodegenSchemaFromJavaScript")
+      def schemaTask = tasks.findByName(schemaTaskName)
+      
+      if (schemaTask != null) {
+        task.dependsOn(schemaTask)
+      }
+    }
+  }
+}
