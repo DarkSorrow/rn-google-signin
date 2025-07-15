@@ -17,7 +17,7 @@ Modern React Native Google Sign-In with Turbo Modules support for the new archit
 - ✅ **Expo Compatible** - Works with Expo managed workflow via config plugin
 - ✅ **iOS & Android** - Full platform support
 - ✅ **Secure** - Follows Google's latest security best practices
-- ✅ **Well Documented** - Comprehensive guides and API reference
+- ✅ **Well Documented** - Comprehensive guides and API reference (WIP)
 - ✅ **Centralized Dependencies** - Single source of truth for all versions
 - ✅ **Git Submodules** - Efficient iOS SDK management
 
