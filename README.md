@@ -2,8 +2,6 @@
 
 Modern React Native Google Sign-In with Turbo Modules support for the new architecture.
 
-> **Note**: This package was created to address specific security and architectural requirements. The excellent `@react-native-google-signin/google-signin` library offers many more features and premium functionality. If you're using their premium features, please continue supporting their work.
-
 [![npm version](https://badge.fury.io/js/%40novastera%2Frn-google-signin.svg)](https://badge.fury.io/js/%40novastera%2Frn-google-signin)
 [![React Native](https://img.shields.io/badge/React%20Native-0.79%2B-blue)](https://reactnative.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typescriptlang.org/)
@@ -436,9 +434,7 @@ class GoogleSignInError extends Error {
 
 ## Migration from react-native-google-signin
 
-This package was created to address specific production security requirements where updating to newer Google Identity Services was necessary. The `@react-native-google-signin/google-signin` library offers many advanced features and premium functionality that this package does not provide.
-
-**Important Note**: If you're using the premium features of `@react-native-google-signin/google-signin`, you should continue using that library as it provides much more comprehensive functionality. This package focuses solely on basic Google Sign-In implementation.
+This package was created to address specific production security requirements where updating to newer Google Identity Services was necessary. If you're using premium features from `@react-native-google-signin/google-signin`, that library may be a better fit as it provides more functionalities.
 
 ### When to Consider This Package:
 
