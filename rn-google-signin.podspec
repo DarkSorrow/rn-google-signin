@@ -28,16 +28,14 @@ Pod::Spec.new do |s|
     s.dependency "GoogleSignIn", "~> #{google_signin_version}"
   end
   
-  # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0
-  if respond_to?(:install_modules_dependencies, true)
-    install_modules_dependencies(s)
-  else
-    s.dependency "React-codegenspec"
-    s.dependency "RCT-Folly", folly_version
-    s.dependency "RCTRequired"
-    s.dependency "RCTTypeSafety"
-    s.dependency "ReactCommon/turbomodule/core"
-  end
+  # Turbo Module dependencies
+  s.dependency "React-Core"
+  s.dependency "React-RCTFabric"
+  s.dependency "React-Codegen"
+  s.dependency "RCT-Folly"
+  s.dependency "RCTRequired"
+  s.dependency "RCTTypeSafety"
+  s.dependency "ReactCommon/turbomodule/core"
 
   # Enable C++ language support
   s.pod_target_xcconfig = {

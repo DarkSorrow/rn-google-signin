@@ -2,9 +2,9 @@
   "name": "@novastera-oss/rn-google-signin",
   "version": "0.1.0",
   "description": "Modern React Native Google Sign-In with Turbo Modules support",
-  "main": "./lib/module/index.js",
-  "module": "./lib/module/index.js",
-  "types": "./lib/typescript/src/index.d.ts",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
   "react-native": {
     "android": {
       "sourceDir": "android"
@@ -16,19 +16,17 @@
   "source": "src/index",
   "exports": {
     ".": {
-      "types": "./lib/typescript/src/index.d.ts",
-      "default": "./lib/module/index.js"
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
     },
     "./app.plugin.js": "./app.plugin.js",
     "./package.json": "./package.json"
   },
   "files": [
     "src",
-    "lib",
     "android",
     "ios",
     "*.podspec",
-    "!lib/typescript/example",
     "!android/build",
     "!ios/build",
     "!**/__tests__",
@@ -46,9 +44,8 @@
     "lint": "eslint \"**/*.js\"",
     "lint:fix": "eslint \"**/*.js\" --fix",
     "clean": "del-cli lib plugin/build",
-    "build": "bob build && npm run build:plugin",
     "build:plugin": "tsc -p plugin/tsconfig.json",
-    "prepare": "bob build && npm run build:plugin",
+    "prepare": "npm run build:plugin",
     "setup-ios-deps": "chmod +x scripts/setup_ios_dependencies.sh && ./scripts/setup_ios_dependencies.sh",
     "setup-ios-deps:windows": "powershell -ExecutionPolicy Bypass -File scripts/setup_ios_dependencies.ps1"
   },
@@ -81,7 +78,6 @@
     "@types/react": "~19.0.0",
     "del-cli": "^6.0.0",
     "eslint": "^9.0.0",
-    "react-native-builder-bob": "^0.40.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   },
@@ -103,30 +99,16 @@
     "useTabs": false
   },
   "codegenConfig": {
-    "name": "RNGoogleSigninSpec",
+    "name": "AppSpecs",
     "type": "modules",
     "jsSrcsDir": "src/spec",
     "android": {
       "javaPackageName": "com.novastera.rngooglesignin"
+    },
+    "ios": {
+      "modulesProvider": {
+        "NativeGoogleSignin": "RCTNativeGoogleSignin"
+      }
     }
-  },
-
-  "react-native-builder-bob": {
-    "source": "src",
-    "output": "lib",
-    "targets": [
-      [
-        "module",
-        {
-          "esm": true
-        }
-      ],
-      [
-        "typescript",
-        {
-          "project": "tsconfig.build.json"
-        }
-      ]
-    ]
   }
 }

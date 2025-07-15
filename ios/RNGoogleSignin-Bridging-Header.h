@@ -3,6 +3,5 @@
 //  RNGoogleSignin
 //
 
-#import <React/RCTBridgeModule.h>
-#import <React/RCTEventEmitter.h>
-#import <ReactCommon/RCTTurboModule.h> 
+#import <React/RCTUtils.h>
+#import <NativeGoogleSigninSpec/NativeGoogleSigninSpec.h> 

@@ -9,6 +9,7 @@ import androidx.credentials.GetCredentialResponse
 import androidx.credentials.exceptions.GetCredentialException
 import com.facebook.react.bridge.*
 import com.facebook.react.module.annotations.ReactModule
+import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -25,10 +26,10 @@ import kotlinx.coroutines.launch
 
 @ReactModule(name = RNGoogleSigninModule.NAME)
 class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
-    NativeRNGoogleSigninSpec(reactContext), ActivityEventListener {
+    NativeGoogleSigninSpec(reactContext), ActivityEventListener {
 
     companion object {
-        const val NAME = "RNGoogleSignin"
+        const val NAME = "NativeGoogleSignin"
         private const val RC_SIGN_IN = 9001
         private const val RC_ADD_SCOPES = 9002
     }

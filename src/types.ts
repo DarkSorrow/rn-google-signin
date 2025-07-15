@@ -1,10 +1,3 @@
-export type { GoogleSignInUser, GoogleSignInConfig } from './spec/NativeGoogleSignin';
-
-export interface GoogleSignInTokens {
-  accessToken: string;
-  idToken: string | null;
-}
-
 export interface GoogleSignInStatusCodes {
   SIGN_IN_CANCELLED: string;
   IN_PROGRESS: string;

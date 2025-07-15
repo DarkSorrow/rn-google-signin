@@ -2,27 +2,14 @@ import Foundation
 import GoogleSignIn
 import React
 
-@objc(RNGoogleSignin)
-class RNGoogleSignin: NSObject, RCTBridgeModule, RCTTurboModule {
-    
-    static func moduleName() -> String! {
-        return "RNGoogleSignin"
-    }
-    
-    static func requiresMainQueueSetup() -> Bool {
-        return true
-    }
+@objc(RCTNativeGoogleSignin)
+class RCTNativeGoogleSignin: NSObject, NativeGoogleSigninSpec {
     
     private var isConfigured = false
-    private var resolver: RCTPromiseResolveBlock?
-    private var rejecter: RCTPromiseRejectBlock?
     
     // MARK: - Configuration
     
-    @objc func configure(_ config: NSDictionary, 
-                        resolver resolve: @escaping RCTPromiseResolveBlock,
-                        rejecter reject: @escaping RCTPromiseRejectBlock) {
-        
+    func configure(config: [String: Any], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
@@ -75,15 +62,12 @@ class RNGoogleSignin: NSObject, RCTBridgeModule, RCTTurboModule {
     
     // MARK: - Sign In Methods
     
-    @objc func hasPlayServices(_ resolve: @escaping RCTPromiseResolveBlock,
-                              rejecter reject: @escaping RCTPromiseRejectBlock) {
+    func hasPlayServices(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         // Always return true on iOS as Google Play Services is an Android concept
         resolve(true)
     }
     
-    @objc func signIn(_ resolve: @escaping RCTPromiseResolveBlock,
-                     rejecter reject: @escaping RCTPromiseRejectBlock) {
-        
+    func signIn(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         guard isConfigured else {
             reject("not_configured", "Google Sign In is not configured. Call configure() first.", nil)
             return
@@ -101,9 +85,7 @@ class RNGoogleSignin: NSObject, RCTBridgeModule, RCTTurboModule {
         }
     }
     
-    @objc func signInSilently(_ resolve: @escaping RCTPromiseResolveBlock,
-                             rejecter reject: @escaping RCTPromiseRejectBlock) {
-        
+    func signInSilently(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         guard isConfigured else {
             reject("not_configured", "Google Sign In is not configured. Call configure() first.", nil)
             return
@@ -128,10 +110,7 @@ class RNGoogleSignin: NSObject, RCTBridgeModule, RCTTurboModule {
         }
     }
     
-    @objc func addScopes(_ scopes: [String],
-                        resolver resolve: @escaping RCTPromiseResolveBlock,
-                        rejecter reject: @escaping RCTPromiseRejectBlock) {
-        
+    func addScopes(scopes: [String], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         guard isConfigured else {
             reject("not_configured", "Google Sign In is not configured. Call configure() first.", nil)
             return
@@ -170,15 +149,12 @@ class RNGoogleSignin: NSObject, RCTBridgeModule, RCTTurboModule {
     
     // MARK: - Sign Out Methods
     
-    @objc func signOut(_ resolve: @escaping RCTPromiseResolveBlock,
-                      rejecter reject: @escaping RCTPromiseRejectBlock) {
+    func signOut(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         GIDSignIn.sharedInstance.signOut()
         resolve(nil)
     }
     
-    @objc func revokeAccess(_ resolve: @escaping RCTPromiseResolveBlock,
-                           rejecter reject: @escaping RCTPromiseRejectBlock) {
-        
+    func revokeAccess(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         GIDSignIn.sharedInstance.disconnect { error in
             if let error = error {
                 reject("revoke_error", "Failed to revoke access: \(error.localizedDescription)", error)
@@ -190,15 +166,12 @@ class RNGoogleSignin: NSObject, RCTBridgeModule, RCTTurboModule {
     
     // MARK: - User State
     
-    @objc func isSignedIn(_ resolve: @escaping RCTPromiseResolveBlock,
-                         rejecter reject: @escaping RCTPromiseRejectBlock) {
+    func isSignedIn(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         let signedIn = GIDSignIn.sharedInstance.currentUser != nil
         resolve(signedIn)
     }
     
-    @objc func getCurrentUser(_ resolve: @escaping RCTPromiseResolveBlock,
-                             rejecter reject: @escaping RCTPromiseRejectBlock) {
-        
+    func getCurrentUser(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         guard let currentUser = GIDSignIn.sharedInstance.currentUser else {
             resolve(NSNull())
             return
@@ -213,17 +186,13 @@ class RNGoogleSignin: NSObject, RCTBridgeModule, RCTTurboModule {
     
     // MARK: - Utilities
     
-    @objc func clearCachedAccessToken(_ accessToken: String,
-                                     resolver resolve: @escaping RCTPromiseResolveBlock,
-                                     rejecter reject: @escaping RCTPromiseRejectBlock) {
+    func clearCachedAccessToken(accessToken: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         // iOS Google Sign In SDK doesn't have a direct equivalent to clearing cached tokens
         // The tokens are automatically managed and refreshed by the SDK
         resolve(nil)
     }
     
-    @objc func getTokens(_ resolve: @escaping RCTPromiseResolveBlock,
-                        rejecter reject: @escaping RCTPromiseRejectBlock) {
-        
+    func getTokens(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         guard let currentUser = GIDSignIn.sharedInstance.currentUser else {
             reject("sign_in_required", "No user is currently signed in", nil)
             return

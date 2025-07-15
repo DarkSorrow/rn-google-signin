@@ -27,6 +27,11 @@ export interface GoogleSignInConfig {
   googleServicePlistPath?: string;
 }
 
+export interface GoogleSignInTokens {
+  accessToken: string;
+  idToken: string | null;
+}
+
 export interface Spec extends TurboModule {
   // Configuration
   configure(config: GoogleSignInConfig): Promise<void>;
@@ -47,10 +52,7 @@ export interface Spec extends TurboModule {
   
   // Utilities
   clearCachedAccessToken(accessToken: string): Promise<void>;
-  getTokens(): Promise<{
-    accessToken: string;
-    idToken: string | null;
-  }>;
+  getTokens(): Promise<GoogleSignInTokens>;
 }
 
-export default TurboModuleRegistry.getEnforcing<Spec>('RNGoogleSignin'); 
+export default TurboModuleRegistry.getEnforcing<Spec>('NativeGoogleSignin'); 

@@ -7,7 +7,7 @@ import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 
-abstract class NativeRNGoogleSigninSpec(reactContext: ReactApplicationContext) :
+abstract class NativeGoogleSigninSpec(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
     @ReactMethod

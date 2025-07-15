@@ -39,23 +39,28 @@ jobs:
           echo "Files included in package: $FILES"
           
           # Check for required files/directories in package.json
-          for REQUIRED in "src" "lib" "android" "ios" "plugin" "dependencies.json" "*.podspec"; do
+          for REQUIRED in "src" "android" "ios" "plugin" "dependencies.json" "*.podspec"; do
             if ! echo "$FILES" | grep -q "$REQUIRED"; then
               echo "⚠️ Warning: '$REQUIRED' might be missing from package.json 'files' field"
             fi
           done
           
-          # Validate React Native Builder Bob configuration
-          BOB_CONFIG=$(node -p "JSON.stringify(require('./package.json')['react-native-builder-bob'] || {})")
-          echo "React Native Builder Bob config: $BOB_CONFIG"
+          # Validate Turbo Module configuration
+          CODECONFIG=$(node -p "JSON.stringify(require('./package.json').codegenConfig || {})")
+          echo "Codegen configuration: $CODECONFIG"
           
-          if ! echo "$BOB_CONFIG" | grep -q "module"; then
-            echo "❌ Error: React Native Builder Bob 'module' target missing!"
+          if ! echo "$CODECONFIG" | grep -q "AppSpecs"; then
+            echo "❌ Error: Codegen config name should be 'AppSpecs'!"
             exit 1
           fi
           
-          if ! echo "$BOB_CONFIG" | grep -q "typescript"; then
-            echo "❌ Error: React Native Builder Bob 'typescript' target missing!"
+          if ! echo "$CODECONFIG" | grep -q "modules"; then
+            echo "❌ Error: Codegen config type should be 'modules'!"
+            exit 1
+          fi
+          
+          if ! echo "$CODECONFIG" | grep -q "src/spec"; then
+            echo "❌ Error: Codegen config jsSrcsDir should be 'src/spec'!"
             exit 1
           fi
           
@@ -109,34 +114,35 @@ jobs:
       - name: Run Code Quality Checks
         run: npm test
         
-      - name: Build Library with React Native Builder Bob
-        run: npm run build
-        
-      - name: Verify Build Output
+      - name: Validate Turbo Module Spec
         run: |
-          echo "Checking React Native Builder Bob build outputs..."
+          echo "Checking Turbo Module specification..."
           
-          # Check ES module build
-          if [ ! -f "lib/module/index.js" ]; then
-            echo "❌ ES module build missing!"
+          # Check that the spec file exists
+          if [ ! -f "src/spec/NativeGoogleSignin.ts" ]; then
+            echo "❌ Turbo Module spec file missing!"
             exit 1
           fi
           
-          # Check TypeScript definitions
-          if [ ! -f "lib/typescript/src/index.d.ts" ]; then
-            echo "❌ TypeScript definitions missing!"
+          # Check that it exports TurboModule interface
+          if ! grep -q "extends TurboModule" "src/spec/NativeGoogleSignin.ts"; then
+            echo "❌ Turbo Module spec doesn't extend TurboModule interface!"
             exit 1
           fi
           
-          # Check plugin build
-          if [ ! -f "plugin/build/withGoogleSignin.js" ]; then
-            echo "❌ Expo plugin build missing!"
+          # Check that it uses TurboModuleRegistry.getEnforcing
+          if ! grep -q "TurboModuleRegistry.getEnforcing" "src/spec/NativeGoogleSignin.ts"; then
+            echo "❌ Turbo Module spec doesn't use TurboModuleRegistry.getEnforcing!"
             exit 1
           fi
           
-          echo "✅ All build outputs verified"
-          echo "Built lib structure:"
-          find lib -type f -name "*.js" -o -name "*.d.ts" | head -10
+          # Check that iOS implementation is pure Turbo Module (no bridge patterns)
+          if [ -f "ios/RNGoogleSignin.mm" ]; then
+            echo "❌ iOS still has old bridge interface file (RNGoogleSignin.mm)!"
+            exit 1
+          fi
+          
+          echo "✅ Turbo Module specification validated"
 
   # Build and validate iOS setup
   test-ios-setup:
@@ -250,6 +256,26 @@ jobs:
             echo "❌ Android package source not found!"
             exit 1
           fi
+          
+          # Check that Android package uses BaseReactPackage for Turbo Modules
+          if ! grep -q "BaseReactPackage" "android/src/main/java/com/novastera/rngooglesignin/RNGoogleSigninPackage.kt"; then
+            echo "❌ Android package doesn't use BaseReactPackage!"
+            exit 1
+          fi
+          
+          # Check that iOS doesn't use old bridge patterns
+          if grep -q "RCT_EXTERN_MODULE" "ios/RNGoogleSignin.swift" || grep -q "RCTBridgeModule" "ios/RNGoogleSignin.swift"; then
+            echo "❌ iOS implementation still uses old bridge patterns!"
+            exit 1
+          fi
+          
+          # Check that iOS implements the generated spec
+          if ! grep -q "NativeGoogleSigninSpec" "ios/RNGoogleSignin.swift"; then
+            echo "❌ iOS doesn't implement the generated Turbo Module spec!"
+            exit 1
+          fi
+          
+
           
           # Check build.gradle uses proper dependency management (gradle.properties or safeExtGet)
           if ! grep -q "safeExtGet" android/build.gradle; then
@@ -393,30 +419,16 @@ jobs:
       
       - name: Build package
         run: |
-          # Build with React Native Builder Bob + plugin
+          # Build plugin only (no react-native-builder-bob needed for Turbo Modules)
           npm run prepare
           
-          # Verify the React Native Builder Bob build output
-          if [ ! -d "lib/module" ] || [ ! "$(ls -A lib/module 2>/dev/null)" ]; then
-            echo "❌ Build failed - ES module build is empty or missing"
-            exit 1
-          fi
-          
-          if [ ! -d "lib/typescript" ] || [ ! "$(ls -A lib/typescript 2>/dev/null)" ]; then
-            echo "❌ Build failed - TypeScript definitions build is empty or missing"
-            exit 1
-          fi
-          
+          # Verify the plugin build output
           if [ ! -d "plugin/build" ] || [ ! "$(ls -A plugin/build 2>/dev/null)" ]; then
             echo "❌ Plugin build failed - plugin/build directory is empty or missing"
             exit 1
           fi
           
           echo "✅ Build completed successfully"
-          echo "Built ES module contents:"
-          ls -la lib/module/
-          echo "Built TypeScript definitions:"
-          ls -la lib/typescript/src/
           echo "Built plugin contents:"
           ls -la plugin/build/
       
@@ -425,7 +437,7 @@ jobs:
           echo "Checking files to be included in the package..."
           
           # Verify core files and directories exist
-          for REQUIRED in "src" "lib" "android" "ios" "plugin" "dependencies.json" "rn-google-signin.podspec"; do
+          for REQUIRED in "src" "android" "ios" "plugin" "dependencies.json" "rn-google-signin.podspec"; do
             if [ ! -e "$REQUIRED" ]; then
               echo "❌ Required file/directory '$REQUIRED' is missing!"
               exit 1
@@ -434,18 +446,13 @@ jobs:
             fi
           done
           
-          # Verify React Native Builder Bob build structure
-          if [ ! -f "lib/module/index.js" ]; then
-            echo "❌ ES module build output missing!"
+          # Verify Turbo Module spec exists
+          if [ ! -f "src/spec/NativeGoogleSignin.ts" ]; then
+            echo "❌ Turbo Module spec file missing!"
             exit 1
           fi
           
-          if [ ! -f "lib/typescript/src/index.d.ts" ]; then
-            echo "❌ TypeScript definitions missing!"
-            exit 1
-          fi
-          
-          echo "✅ React Native Builder Bob outputs verified"
+          echo "✅ Turbo Module spec verified"
           
           # Verify iOS submodule is present (should be from artifacts)
           if [ ! -d "ios/third-party/GoogleSignIn-iOS" ]; then

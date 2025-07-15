@@ -1,149 +1,66 @@
-# @novastera-oss/rn-google-signin
+# React Native Google Sign-In with Turbo Modules
 
-Modern React Native Google Sign-In with Turbo Modules support for the new architecture.
-
-[![npm version](https://badge.fury.io/js/%40novastera%2Frn-google-signin.svg)](https://badge.fury.io/js/%40novastera%2Frn-google-signin)
-[![React Native](https://img.shields.io/badge/React%20Native-0.79%2B-blue)](https://reactnative.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typescriptlang.org/)
-[![Expo](https://img.shields.io/badge/Expo-Compatible-black)](https://expo.dev/)
+A modern React Native Google Sign-In library built with Turbo Native Modules for optimal performance and direct native access.
 
 ## Features
 
-- ✅ **Turbo Modules** - Built for React Native's new architecture
-- ✅ **TypeScript** - Full TypeScript support with strict typing
-- ✅ **Modern APIs** - Uses latest Google Identity Services
-- ✅ **Expo Compatible** - Works with Expo managed workflow via config plugin
-- ✅ **iOS & Android** - Full platform support
-- ✅ **Secure** - Follows Google's latest security best practices
-- ✅ **Well Documented** - Comprehensive guides and API reference (WIP)
-- ✅ **Centralized Dependencies** - Single source of truth for all versions
-- ✅ **Git Submodules** - Efficient iOS SDK management
-
-## Table of Contents
-
-- [Installation](#installation)
-- [Configuration](#configuration)
-  - [React Native CLI](#react-native-cli)
-  - [Expo](#expo)
-- [Usage](#usage)
-- [API Reference](#api-reference)
-- [Migration from react-native-google-signin](#migration)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
+- ⚡ **Turbo Native Modules** - Direct native access without JavaScript bridge overhead
+- 🔧 **TypeScript Support** - Full type safety and IntelliSense
+- 📱 **Cross-Platform** - iOS and Android support
+- 🚀 **Modern Architecture** - Built for React Native 0.79+ with New Architecture
+- 🔐 **Secure Authentication** - Uses official Google Sign-In SDKs
+- 📦 **Expo Compatible** - Works with Expo managed and bare workflows
 
 ## Installation
 
+### 1. Install the package
+
 ```bash
 npm install @novastera-oss/rn-google-signin
-```
-
-or
-
-```bash
+# or
 yarn add @novastera-oss/rn-google-signin
 ```
 
-## Configuration
+### 2. iOS Setup
 
-### React Native CLI
+#### Using Expo
 
-#### iOS Setup
+If you're using Expo, the iOS dependencies will be automatically configured.
 
-1. **Set up iOS dependencies** (using Git submodules):
-   
-   **macOS/Linux:**
-   ```bash
-   npm run setup-ios-deps
-   ```
-   
-   **Windows:**
-   ```bash
-   npm run setup-ios-deps:windows
-   ```
-   
-   This command will:
-   - Add the GoogleSignIn iOS SDK as a Git submodule
-   - Pin it to a specific commit for stability
-   - Set up the proper directory structure
+#### Manual Setup
 
-   > **Note**: This package uses Git submodules to manage iOS dependencies efficiently. If you clone this repository, make sure to initialize submodules:
-   > ```bash
-   > git submodule update --init --recursive
-   > ```
-
-2. **Add your GoogleService-Info.plist**:
-   - Download from [Firebase Console](https://console.firebase.google.com/)
-   - Add to your iOS project in Xcode
-
-3. **Configure URL Scheme**:
-   Add this to your `ios/YourApp/Info.plist`:
-   ```xml
-   <key>CFBundleURLTypes</key>
-   <array>
-     <dict>
-       <key>CFBundleURLName</key>
-       <string>GoogleSignIn</string>
-       <key>CFBundleURLSchemes</key>
-       <array>
-         <!-- Replace with your REVERSED_CLIENT_ID from GoogleService-Info.plist -->
-         <string>com.googleusercontent.apps.YOUR_CLIENT_ID</string>
-       </array>
-     </dict>
-   </array>
-   ```
-
-#### Android Setup
-
-1. **Add your google-services.json**:
-   - Download from [Firebase Console](https://console.firebase.google.com/)
-   - Place in `android/app/google-services.json`
-
-2. **Configure Gradle**:
-   Add to `android/app/build.gradle`:
-   ```gradle
-   apply plugin: 'com.google.gms.google-services'
-   ```
-
-   Add to `android/build.gradle`:
-   ```gradle
-   dependencies {
-     classpath 'com.google.gms:google-services:4.3.15'
-   }
-   ```
-
-### Expo
-
-Install the package and configure the plugin:
+1. Install the iOS dependencies:
 
 ```bash
-npx expo install @novastera-oss/rn-google-signin
+cd ios && pod install
 ```
 
-Add the plugin to your `app.config.js`:
+2. Add your `GoogleService-Info.plist` to the iOS project.
 
-```javascript
-export default {
-  expo: {
-    // ... your existing config
-    plugins: [
-      [
-        "@novastera-oss/rn-google-signin",
-        {
-          iosClientId: "YOUR_IOS_CLIENT_ID.apps.googleusercontent.com",
-          androidClientId: "YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com",
-          webClientId: "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
-        }
-      ]
-    ]
-  }
-};
+### 3. Android Setup
+
+#### Using Expo
+
+If you're using Expo, the Android dependencies will be automatically configured.
+
+#### Manual Setup
+
+1. Add your `google-services.json` to the `android/app/` directory.
+
+2. Update your `android/build.gradle`:
+
+```gradle
+buildscript {
+    dependencies {
+        classpath 'com.google.gms:google-services:4.3.15'
+    }
+}
 ```
 
-Then rebuild your development build:
+3. Update your `android/app/build.gradle`:
 
-```bash
-npx expo run:ios
-npx expo run:android
+```gradle
+apply plugin: 'com.google.gms.google-services'
 ```
 
 ## Usage
@@ -151,35 +68,34 @@ npx expo run:android
 ### Basic Setup
 
 ```typescript
-import GoogleSignIn, { GoogleSignInConfig } from '@novastera-oss/rn-google-signin';
+import GoogleSignIn from '@novastera-oss/rn-google-signin';
 
-const config: GoogleSignInConfig = {
-  webClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+// Configure the module
+await GoogleSignIn.configure({
+  webClientId: 'your-web-client-id.apps.googleusercontent.com',
+  iosClientId: 'your-ios-client-id.apps.googleusercontent.com', // Optional
+  scopes: ['email', 'profile'],
   offlineAccess: true,
-  scopes: ['profile', 'email'],
-};
-
-// Configure the library
-await GoogleSignIn.configure(config);
+});
 ```
 
 ### Sign In
 
 ```typescript
-import GoogleSignIn, { GoogleSignInUser } from '@novastera-oss/rn-google-signin';
+import GoogleSignIn from '@novastera-oss/rn-google-signin';
 
-const handleSignIn = async () => {
+const signIn = async () => {
   try {
-    // Check if device has Google Play Services (Android)
-    await GoogleSignIn.hasPlayServices();
+    // Check if Google Play Services are available (Android only)
+    const hasPlayServices = await GoogleSignIn.hasPlayServices();
     
-    // Trigger the sign-in flow
-    const user: GoogleSignInUser = await GoogleSignIn.signIn();
-    
-    console.log('User signed in:', user);
-    // Use user.user.email, user.user.name, etc.
+    if (hasPlayServices) {
+      // Sign in the user
+      const userInfo = await GoogleSignIn.signIn();
+      console.log('User signed in:', userInfo);
+    }
   } catch (error) {
-    console.error('Sign-in error:', error);
+    console.error('Sign in error:', error);
   }
 };
 ```
@@ -187,25 +103,12 @@ const handleSignIn = async () => {
 ### Silent Sign In
 
 ```typescript
-const handleSilentSignIn = async () => {
+const signInSilently = async () => {
   try {
-    const user = await GoogleSignIn.signInSilently();
-    console.log('Silent sign-in successful:', user);
+    const userInfo = await GoogleSignIn.signInSilently();
+    console.log('Silent sign in successful:', userInfo);
   } catch (error) {
-    console.log('No existing sign-in found');
-  }
-};
-```
-
-### Sign Out
-
-```typescript
-const handleSignOut = async () => {
-  try {
-    await GoogleSignIn.signOut();
-    console.log('User signed out');
-  } catch (error) {
-    console.error('Sign-out error:', error);
+    console.error('Silent sign in error:', error);
   }
 };
 ```
@@ -219,168 +122,61 @@ const getCurrentUser = async () => {
     if (user) {
       console.log('Current user:', user);
     } else {
-      console.log('No user is signed in');
+      console.log('No user signed in');
     }
   } catch (error) {
-    console.error('Error getting current user:', error);
+    console.error('Get current user error:', error);
   }
 };
 ```
 
-### Complete Example
+### Sign Out
 
 ```typescript
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
-import GoogleSignIn, { 
-  GoogleSignInUser, 
-  GoogleSignInConfig,
-  statusCodes 
-} from '@novastera-oss/rn-google-signin';
-
-const App = () => {
-  const [user, setUser] = useState<GoogleSignInUser | null>(null);
-  const [isSigningIn, setIsSigningIn] = useState(false);
-
-  useEffect(() => {
-    // Configure Google Sign-In
-    const configure = async () => {
-      try {
-        const config: GoogleSignInConfig = {
-          webClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
-          offlineAccess: true,
-          scopes: ['profile', 'email'],
-        };
-        
-        await GoogleSignIn.configure(config);
-        
-        // Try silent sign-in
-        const currentUser = await GoogleSignIn.getCurrentUser();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('Configuration error:', error);
-      }
-    };
-
-    configure();
-  }, []);
-
-  const handleSignIn = async () => {
-    setIsSigningIn(true);
-    try {
-      await GoogleSignIn.hasPlayServices();
-      const userInfo = await GoogleSignIn.signIn();
-      setUser(userInfo);
-    } catch (error: any) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        Alert.alert('Sign-in cancelled');
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        Alert.alert('Sign-in in progress');
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert('Play Services not available');
-      } else {
-        Alert.alert('Error', error.message);
-      }
-    } finally {
-      setIsSigningIn(false);
-    }
-  };
-
-  const handleSignOut = async () => {
-    try {
-      await GoogleSignIn.signOut();
-      setUser(null);
-    } catch (error) {
-      console.error('Sign-out error:', error);
-    }
-  };
-
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      {user ? (
-        <View style={{ alignItems: 'center' }}>
-          <Text>Welcome, {user.user.name}!</Text>
-          <Text>{user.user.email}</Text>
-          <TouchableOpacity
-            onPress={handleSignOut}
-            style={{ marginTop: 20, padding: 10, backgroundColor: '#db4437' }}
-          >
-            <Text style={{ color: 'white' }}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity
-          onPress={handleSignIn}
-          disabled={isSigningIn}
-          style={{ padding: 10, backgroundColor: '#4285f4' }}
-        >
-          <Text style={{ color: 'white' }}>
-            {isSigningIn ? 'Signing In...' : 'Sign In with Google'}
-          </Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+const signOut = async () => {
+  try {
+    await GoogleSignIn.signOut();
+    console.log('User signed out');
+  } catch (error) {
+    console.error('Sign out error:', error);
+  }
 };
+```
 
-export default App;
+### Get Tokens
+
+```typescript
+const getTokens = async () => {
+  try {
+    const tokens = await GoogleSignIn.getTokens();
+    console.log('Access token:', tokens.accessToken);
+    console.log('ID token:', tokens.idToken);
+  } catch (error) {
+    console.error('Get tokens error:', error);
+  }
+};
 ```
 
 ## API Reference
 
 ### Configuration
 
-#### `GoogleSignIn.configure(config: GoogleSignInConfig): Promise<void>`
-
-Configure the Google Sign-In instance.
-
-**Parameters:**
-- `config`: Configuration object
-
-**GoogleSignInConfig:**
 ```typescript
 interface GoogleSignInConfig {
-  webClientId?: string;          // Web client ID from Google Console
-  iosClientId?: string;          // iOS client ID (optional)
-  androidClientId?: string;      // Android client ID (optional)
-  scopes?: string[];             // Additional scopes to request
-  offlineAccess?: boolean;       // Request offline access
-  hostedDomain?: string;         // Restrict to specific domain
-  forceCodeForRefreshToken?: boolean;  // Force server auth code
-  accountName?: string;          // Pre-select account (Android)
-  googleServicePlistPath?: string;     // Custom plist path (iOS)
+  webClientId?: string;           // Required: Your web client ID
+  iosClientId?: string;           // Optional: iOS client ID
+  androidClientId?: string;       // Optional: Android client ID
+  scopes?: string[];              // Optional: Additional scopes
+  offlineAccess?: boolean;        // Optional: Request offline access
+  hostedDomain?: string;          // Optional: Restrict to specific domain
+  forceCodeForRefreshToken?: boolean; // Optional: Force refresh token
+  accountName?: string;           // Optional: Pre-select account
+  googleServicePlistPath?: string; // Optional: Path to GoogleService-Info.plist
 }
 ```
 
-### Authentication Methods
+### User Object
 
-#### `GoogleSignIn.signIn(): Promise<GoogleSignInUser>`
-
-Initiate the sign-in flow.
-
-#### `GoogleSignIn.signInSilently(): Promise<GoogleSignInUser>`
-
-Sign in silently if user is already authenticated.
-
-#### `GoogleSignIn.signOut(): Promise<void>`
-
-Sign out the current user.
-
-#### `GoogleSignIn.revokeAccess(): Promise<void>`
-
-Revoke access and sign out.
-
-### User Information
-
-#### `GoogleSignIn.isSignedIn(): Promise<boolean>`
-
-Check if a user is currently signed in.
-
-#### `GoogleSignIn.getCurrentUser(): Promise<GoogleSignInUser | null>`
-
-Get current user information.
-
-**GoogleSignInUser:**
 ```typescript
 interface GoogleSignInUser {
   user: {
@@ -397,204 +193,163 @@ interface GoogleSignInUser {
 }
 ```
 
-### Utility Methods
+### Methods
 
-#### `GoogleSignIn.hasPlayServices(): Promise<boolean>`
-
-Check if Google Play Services are available (Android only, returns `true` on iOS).
-
-#### `GoogleSignIn.addScopes(scopes: string[]): Promise<GoogleSignInUser>`
-
-Request additional scopes from the current user.
-
-#### `GoogleSignIn.getTokens(): Promise<{ accessToken: string; idToken: string | null }>`
-
-Get current access token and ID token.
-
-#### `GoogleSignIn.clearCachedAccessToken(accessToken: string): Promise<void>`
-
-Clear cached access token (Android only).
+| Method | Description |
+|--------|-------------|
+| `configure(config)` | Configure the Google Sign-In module |
+| `hasPlayServices()` | Check if Google Play Services are available (Android only) |
+| `signIn()` | Sign in the user |
+| `signInSilently()` | Sign in silently if user was previously signed in |
+| `addScopes(scopes)` | Add additional scopes to the current user |
+| `signOut()` | Sign out the current user |
+| `revokeAccess()` | Revoke access and sign out the user |
+| `isSignedIn()` | Check if a user is currently signed in |
+| `getCurrentUser()` | Get the current signed-in user |
+| `clearCachedAccessToken(token)` | Clear the cached access token |
+| `getTokens()` | Get the current access token and ID token |
 
 ### Error Handling
 
 ```typescript
-import { statusCodes, GoogleSignInError } from '@novastera-oss/rn-google-signin';
+import { GoogleSignInError, statusCodes } from '@novastera-oss/rn-google-signin';
 
-// Status codes
-statusCodes.SIGN_IN_CANCELLED      // User cancelled
-statusCodes.IN_PROGRESS           // Sign-in in progress
-statusCodes.PLAY_SERVICES_NOT_AVAILABLE  // Play Services unavailable
-statusCodes.SIGN_IN_REQUIRED      // Sign-in required
-
-// Custom error class
-class GoogleSignInError extends Error {
-  code: string;
+try {
+  await GoogleSignIn.signIn();
+} catch (error) {
+  if (error instanceof GoogleSignInError) {
+    switch (error.code) {
+      case statusCodes.SIGN_IN_CANCELLED:
+        console.log('User cancelled sign in');
+        break;
+      case statusCodes.IN_PROGRESS:
+        console.log('Sign in already in progress');
+        break;
+      case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+        console.log('Google Play Services not available');
+        break;
+      case statusCodes.SIGN_IN_REQUIRED:
+        console.log('User needs to sign in');
+        break;
+    }
+  }
 }
 ```
 
-## Migration from react-native-google-signin
+## Turbo Modules Benefits
 
-This package was created to address specific production security requirements where updating to newer Google Identity Services was necessary. If you're using premium features from `@react-native-google-signin/google-signin`, that library may be a better fit as it provides more functionalities.
+This library uses Turbo Native Modules, which provides several advantages:
 
-### When to Consider This Package:
+1. **Direct Native Access** - No JavaScript bridge overhead
+2. **Better Performance** - Faster method calls and data transfer
+3. **Type Safety** - Full TypeScript support with proper types
+4. **Modern Architecture** - Built for React Native's New Architecture
+5. **Future-Proof** - Compatible with upcoming React Native versions
 
-- You need to use the latest Google Identity Services for security compliance
-- You're building with React Native's new architecture (Turbo Modules)
-- You only need basic Google Sign-In functionality
-- You want minimal dependencies with centralized version management
+## How Turbo Modules Work
 
-### Key Differences:
+This library follows the React Native Turbo Modules pattern:
 
-1. **Scope**: Focused only on basic sign-in (no premium features)
-2. **Architecture**: Built specifically for Turbo Modules
-3. **Dependencies**: Uses latest Google Identity Services
-4. **Management**: Centralized dependency versioning
+1. **TypeScript Spec**: `src/spec/NativeGoogleSignin.ts` defines the interface
+2. **Codegen**: React Native automatically generates native interfaces
+3. **Native Implementation**: Android (Kotlin) and iOS (Swift) implement the spec
+4. **Direct Access**: No JavaScript wrapper - direct native module access
 
-### Migration Steps (if needed):
+### Codegen Configuration
 
-1. **Uninstall the existing package**:
-   ```bash
-   npm uninstall @react-native-google-signin/google-signin
-   ```
+The `package.json` includes the proper Codegen configuration:
 
-2. **Install this package**:
-   ```bash
-   npm install @novastera-oss/rn-google-signin
-   ```
+```json
+{
+  "codegenConfig": {
+    "name": "AppSpecs",
+    "type": "modules",
+    "jsSrcsDir": "src/spec",
+    "android": {
+      "javaPackageName": "com.novastera.rngooglesignin"
+    },
+    "ios": {
+      "modulesProvider": {
+        "NativeGoogleSignin": "RCTNativeGoogleSignin"
+      }
+    }
+  }
+}
+```
 
-3. **Update imports**:
+### iOS Module Registration
+
+The iOS implementation includes a module provider (`RNGoogleSigninModuleProvider.swift`) that registers the Turbo Module with React Native's codegen system.
+
+## Migration from Legacy Modules
+
+If you're migrating from a legacy Google Sign-In library:
+
+1. Replace the import:
    ```typescript
-   // Before
-   import { GoogleSignin } from '@react-native-google-signin/google-signin';
+   // Old
+   import { GoogleSignIn } from 'react-native-google-signin';
    
-   // After
+   // New
    import GoogleSignIn from '@novastera-oss/rn-google-signin';
    ```
 
-4. **Update method calls** (if using the old class-based API):
+2. Update method calls to use the new API:
    ```typescript
-   // Before
-   GoogleSignin.configure(config);
+   // Old
+   await GoogleSignIn.configure({
+     webClientId: 'your-client-id',
+   });
    
-   // After
-   GoogleSignIn.configure(config);
+   // New (same API, but with Turbo Module benefits)
+   await GoogleSignIn.configure({
+     webClientId: 'your-client-id',
+   });
    ```
-
-The basic sign-in API is designed to be compatible to minimize code changes during migration.
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### iOS: "No such module 'GoogleSignIn'"
+1. **"Google Sign In is not configured"**
+   - Make sure to call `GoogleSignIn.configure()` before any other methods
 
-Make sure you've run:
-```bash
-cd ios && pod install
-```
+2. **"No client ID found"**
+   - Ensure you have provided a valid `webClientId` or `iosClientId`
+   - Check that your `GoogleService-Info.plist` is properly added to the iOS project
 
-#### Android: "Module not found"
+3. **"Google Play Services not available"** (Android)
+   - This is expected on emulators or devices without Google Play Services
+   - The method will return `false` in these cases
 
-Ensure you've added the Google Services plugin to your `android/app/build.gradle`:
-```gradle
-apply plugin: 'com.google.gms.google-services'
-```
-
-#### "DEVELOPER_ERROR" on Android
-
-- Verify your `google-services.json` is in the correct location
-- Check that your package name matches the one in Google Console
-- Ensure you've configured the SHA-1 fingerprint
-
-#### "Sign in failed" on iOS
-
-- Verify your `GoogleService-Info.plist` is added to your Xcode project
-- Check that your URL scheme matches the `REVERSED_CLIENT_ID`
-- Ensure the client ID in your config matches the one in the plist
+4. **Build errors**
+   - Make sure you have the latest version of React Native
+   - Clean and rebuild your project
+   - For iOS: `cd ios && pod install && cd ..`
+   - For Android: `cd android && ./gradlew clean && cd ..`
 
 ### Debug Mode
 
-Enable debug logging:
+Enable debug logging by setting the environment variable:
 
-```typescript
-// Add this for development
-if (__DEV__) {
-  console.log('Google Sign-In Debug Mode Enabled');
-}
+```bash
+export GOOGLE_SIGNIN_DEBUG=true
 ```
 
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-### Development Setup
-
-1. Clone the repository
-2. Initialize submodules: `git submodule update --init --recursive`
-3. Install dependencies: `yarn install`
-4. Set up iOS dependencies: `npm run setup-ios-deps`
-5. Run the example: `yarn example`
-
-### Working with Submodules
-
-This package uses Git submodules for iOS SDK dependencies. Here are some useful commands:
-
-```bash
-# Initialize submodules (first time)
-git submodule update --init --recursive
-
-# Update submodules to latest
-git submodule update --remote
-
-# Update to a specific commit (in the submodule directory)
-cd ios/third-party/GoogleSignIn-iOS
-git checkout <commit-hash>
-cd -
-git add ios/third-party/GoogleSignIn-iOS
-git commit -m "Update GoogleSignIn to <commit-hash>"
-```
-
-### Version Management
-
-This package uses a centralized dependency management system:
-
-- **`dependencies.json`**: Contains iOS dependency versions (for podspec)
-- **`gradle.properties`**: Contains Android dependency versions (standard Gradle approach)
-- **`package.json`**: Contains the package version and React Native compatibility
-- **Automatic synchronization**: Scripts and build files read from these sources
-
-To update dependency versions:
-
-1. **Update GoogleSignIn iOS SDK**:
-   ```bash
-   # Edit dependencies.json
-   # Update version and commit hash
-   npm run setup-ios-deps
-   ```
-
-2. **Update Android dependencies**:
-   ```bash
-   # For Android: Edit gradle.properties
-# For iOS: Edit dependencies.json under dependencies.googleSignIn.ios
-   # Gradle will automatically use new versions
-   ```
-
-3. **Update package version**:
-   ```bash
-   # Edit package.json version field
-   # Plugin and scripts will automatically use new version
-   ```
-
-This ensures all parts of the package stay synchronized and reduces maintenance overhead.
-
-### Testing
-
-```bash
-yarn test
-yarn typecheck
-yarn lint
-```
-
 ## License
 
-Apache 2.0 © [Novastera](https://novastera.com)
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+- 📖 [Documentation](https://github.com/novastera/rn-google-signin#readme)
+- 🐛 [Issues](https://github.com/novastera/rn-google-signin/issues)
+- 💬 [Discussions](https://github.com/novastera/rn-google-signin/discussions)
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a list of changes and version history.
