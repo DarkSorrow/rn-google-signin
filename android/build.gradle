@@ -10,11 +10,6 @@ def isNewArchitectureEnabled() {
   return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
 }
 
-if (isNewArchitectureEnabled()) {
-  apply plugin: "com.facebook.react"
-  apply plugin: "com.facebook.react.codegen"
-}
-
 apply plugin: 'com.android.library'
 apply plugin: 'org.jetbrains.kotlin.android'
 
@@ -22,6 +17,10 @@ android {
   def agpVersion = com.android.Version.ANDROID_GRADLE_PLUGIN_VERSION
   if (agpVersion.tokenize('.')[0].toInteger() >= 7) {
     namespace "com.novastera.rngooglesignin"
+  }
+  
+  buildFeatures {
+    buildConfig true
   }
   
   compileSdkVersion getExtOrIntegerDefault('compileSdkVersion')
@@ -53,19 +52,9 @@ android {
 
   sourceSets {
     main {
-      if (isNewArchitectureEnabled()) {
-        java.srcDirs += [
-          "src/newarch",
-          // This is needed to build Kotlin classes before Java classes
-          "src/main/java"
-        ]
-      } else {
-        java.srcDirs += [
-          "src/oldarch",
-          // This is needed to build Kotlin classes before Java classes
-          "src/main/java"
-        ]
-      }
+      java.srcDirs += [
+        "src/main/java"
+      ]
     }
   }
 }
@@ -86,53 +75,5 @@ dependencies {
   implementation "com.google.android.libraries.identity.googleid:googleid:${safeExtGet('googleIdVersion', '1.1.0')}"
 }
 
-// Fix Gradle task dependency issues for React Native autolinking
-afterEvaluate {
-  // Fix resource packaging dependencies - handle naming inconsistencies
-  tasks.matching { task ->
-    task.name.contains("packageDebugResources")
-  }.configureEach { task ->
-    def resValuesTask = tasks.findByName("generateDebugResValues")
-    if (resValuesTask == null) {
-      // Try to find by pattern if exact name doesn't work
-      def resTasks = tasks.findAll { it.name.contains("generateDebugResValues") }
-      if (!resTasks.isEmpty()) {
-        resValuesTask = resTasks.first()
-      }
-    }
-    if (resValuesTask != null) {
-      task.dependsOn(resValuesTask)
-    }
-  }
-  
-  tasks.matching { task ->
-    task.name.contains("packageReleaseResources")
-  }.configureEach { task ->
-    def resValuesTask = tasks.findByName("generateReleaseResValues")
-    if (resValuesTask == null) {
-      // Try to find by pattern if exact name doesn't work
-      def resTasks = tasks.findAll { it.name.contains("generateReleaseResValues") }
-      if (!resTasks.isEmpty()) {
-        resValuesTask = resTasks.first()
-      }
-    }
-    if (resValuesTask != null) {
-      task.dependsOn(resValuesTask)
-    }
-  }
-  
-  // Fix codegen task dependencies for React Native New Architecture
-  if (isNewArchitectureEnabled()) {
-    tasks.matching { task ->
-      task.name.contains("generateCodegenArtifactsFromSchema")
-    }.configureEach { task ->
-      // Find the corresponding schema task
-      def schemaTaskName = task.name.replace("generateCodegenArtifactsFromSchema", "generateCodegenSchemaFromJavaScript")
-      def schemaTask = tasks.findByName(schemaTaskName)
-      
-      if (schemaTask != null) {
-        task.dependsOn(schemaTask)
-      }
-    }
-  }
-}
+// Turbo Modules don't need complex task dependencies
+// The build system handles codegen automatically
