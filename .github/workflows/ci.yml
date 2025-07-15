@@ -102,7 +102,7 @@ jobs:
   test-ios-setup:
     name: Test iOS Setup
     needs: setup
-    runs-on: macos-latest
+    runs-on: macos-15  # Use macOS 14 explicitly to avoid migration issues
     steps:
       - name: Download Repository
         uses: actions/download-artifact@v4
