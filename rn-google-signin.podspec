@@ -44,4 +44,7 @@ Pod::Spec.new do |s|
   }
   
   s.compiler_flags = folly_compiler_flags + " -DRCT_NEW_ARCH_ENABLED=1"
+  
+  # Turbo Module configuration
+  s.install_modules_dependencies = true
 end 

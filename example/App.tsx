@@ -1,165 +1,129 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
-import GoogleSignIn, { GoogleSignInUser, statusCodes } from '@novastera-oss/rn-google-signin';
+import { View, Text, Button, Alert } from 'react-native';
+import GoogleSignIn from '../src/index';
 
-const App = () => {
-  const [user, setUser] = useState<GoogleSignInUser | null>(null);
-  const [isSigningIn, setIsSigningIn] = useState(false);
+export default function App() {
+  const [isConfigured, setIsConfigured] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [isSignedIn, setIsSignedIn] = useState(false);
 
   useEffect(() => {
-    // Configure Google Sign-In
-    const configure = async () => {
-      try {
-        await GoogleSignIn.configure({
-          webClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com', // Replace with your client ID
-          iosClientId: 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com', // Replace with your iOS client ID
-          offlineAccess: true,
-          scopes: ['profile', 'email'],
-        });
-        
-        // Try silent sign-in
-        const currentUser = await GoogleSignIn.getCurrentUser();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('Configuration error:', error);
-      }
-    };
-
-    configure();
+    configureGoogleSignIn();
   }, []);
 
-  const handleSignIn = async () => {
-    setIsSigningIn(true);
+  const configureGoogleSignIn = async () => {
     try {
-      const hasPlayServices = await GoogleSignIn.hasPlayServices();
-      
-      if (hasPlayServices) {
-        const userInfo = await GoogleSignIn.signIn();
-        setUser(userInfo);
-      } else {
-        Alert.alert('Error', 'Google Play Services not available');
-      }
-    } catch (error: any) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        Alert.alert('Sign-in cancelled');
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        Alert.alert('Sign-in in progress');
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert('Play Services not available');
-      } else {
-        Alert.alert('Error', error.message);
-      }
-    } finally {
-      setIsSigningIn(false);
+      await GoogleSignIn.configure({
+        webClientId: 'your-web-client-id.apps.googleusercontent.com', // Replace with your actual client ID
+        iosClientId: 'your-ios-client-id.apps.googleusercontent.com', // Replace with your actual iOS client ID
+        scopes: ['email', 'profile'],
+        offlineAccess: true,
+      });
+      setIsConfigured(true);
+      console.log('✅ Google Sign-In configured successfully');
+    } catch (error) {
+      console.error('❌ Failed to configure Google Sign-In:', error);
+      Alert.alert('Configuration Error', 'Failed to configure Google Sign-In');
     }
   };
 
-  const handleSignOut = async () => {
+  const checkPlayServices = async () => {
+    try {
+      const hasServices = await GoogleSignIn.hasPlayServices();
+      Alert.alert('Play Services', `Available: ${hasServices}`);
+    } catch (error) {
+      console.error('Play Services check failed:', error);
+      Alert.alert('Error', 'Failed to check Play Services');
+    }
+  };
+
+  const signIn = async () => {
+    try {
+      const userInfo = await GoogleSignIn.signIn();
+      setUser(userInfo);
+      setIsSignedIn(true);
+      console.log('✅ Sign in successful:', userInfo);
+      Alert.alert('Success', 'Signed in successfully!');
+    } catch (error) {
+      console.error('❌ Sign in failed:', error);
+      Alert.alert('Sign In Error', 'Failed to sign in');
+    }
+  };
+
+  const signOut = async () => {
     try {
       await GoogleSignIn.signOut();
       setUser(null);
+      setIsSignedIn(false);
+      console.log('✅ Sign out successful');
+      Alert.alert('Success', 'Signed out successfully!');
     } catch (error) {
-      console.error('Sign-out error:', error);
+      console.error('❌ Sign out failed:', error);
+      Alert.alert('Sign Out Error', 'Failed to sign out');
     }
   };
 
-  const handleGetTokens = async () => {
+  const checkSignInStatus = async () => {
     try {
-      const tokens = await GoogleSignIn.getTokens();
-      Alert.alert('Tokens', `Access Token: ${tokens.accessToken.substring(0, 20)}...`);
+      const signedIn = await GoogleSignIn.isSignedIn();
+      setIsSignedIn(signedIn);
+      Alert.alert('Sign In Status', `Currently signed in: ${signedIn}`);
     } catch (error) {
-      Alert.alert('Error', 'Failed to get tokens');
+      console.error('Status check failed:', error);
+      Alert.alert('Error', 'Failed to check sign in status');
+    }
+  };
+
+  const getCurrentUser = async () => {
+    try {
+      const currentUser = await GoogleSignIn.getCurrentUser();
+      if (currentUser) {
+        setUser(currentUser);
+        Alert.alert('Current User', `Email: ${currentUser.user.email}`);
+      } else {
+        Alert.alert('No User', 'No user is currently signed in');
+      }
+    } catch (error) {
+      console.error('Get current user failed:', error);
+      Alert.alert('Error', 'Failed to get current user');
     }
   };
 
   return (
-    <View style={styles.container}>
-      {user ? (
-        <View style={styles.userContainer}>
-          <Text style={styles.title}>Welcome, {user.user.name}!</Text>
-          <Text style={styles.email}>{user.user.email}</Text>
-          {user.user.photo && (
-            <Text style={styles.photo}>Photo: {user.user.photo}</Text>
-          )}
-          <TouchableOpacity style={styles.button} onPress={handleGetTokens}>
-            <Text style={styles.buttonText}>Get Tokens</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.button, styles.signOutButton]} onPress={handleSignOut}>
-            <Text style={styles.buttonText}>Sign Out</Text>
-          </TouchableOpacity>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+      <Text style={{ fontSize: 24, marginBottom: 20 }}>
+        React Native Google Sign-In Turbo Module Test
+      </Text>
+      
+      <Text style={{ marginBottom: 20 }}>
+        Configuration Status: {isConfigured ? '✅ Configured' : '❌ Not Configured'}
+      </Text>
+      
+      <Text style={{ marginBottom: 20 }}>
+        Sign In Status: {isSignedIn ? '✅ Signed In' : '❌ Not Signed In'}
+      </Text>
+
+      {user && (
+        <View style={{ marginBottom: 20, padding: 10, backgroundColor: '#f0f0f0' }}>
+          <Text>Current User:</Text>
+          <Text>Email: {user.user.email}</Text>
+          <Text>Name: {user.user.name}</Text>
         </View>
-      ) : (
-        <TouchableOpacity
-          style={[styles.button, styles.signInButton]}
-          onPress={handleSignIn}
-          disabled={isSigningIn}
-        >
-          <Text style={styles.buttonText}>
-            {isSigningIn ? 'Signing In...' : 'Sign In with Google'}
-          </Text>
-        </TouchableOpacity>
       )}
+
+      <Button title="Check Play Services" onPress={checkPlayServices} />
+      <View style={{ height: 10 }} />
+      
+      <Button title="Check Sign In Status" onPress={checkSignInStatus} />
+      <View style={{ height: 10 }} />
+      
+      <Button title="Get Current User" onPress={getCurrentUser} />
+      <View style={{ height: 10 }} />
+      
+      <Button title="Sign In" onPress={signIn} />
+      <View style={{ height: 10 }} />
+      
+      <Button title="Sign Out" onPress={signOut} />
     </View>
   );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-  },
-  userContainer: {
-    alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
-  },
-  email: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 10,
-  },
-  photo: {
-    fontSize: 14,
-    color: '#999',
-    marginBottom: 20,
-  },
-  button: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginVertical: 5,
-    minWidth: 200,
-    alignItems: 'center',
-  },
-  signInButton: {
-    backgroundColor: '#4285f4',
-  },
-  signOutButton: {
-    backgroundColor: '#db4437',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
-
-export default App; 
+} 
