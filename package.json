@@ -1,5 +1,5 @@
 {
-  "name": "@novastera/rn-google-signin",
+  "name": "@novastera-oss/rn-google-signin",
   "version": "0.1.0",
   "description": "Modern React Native Google Sign-In with Turbo Modules support",
   "main": "lib/typescript/index.js",

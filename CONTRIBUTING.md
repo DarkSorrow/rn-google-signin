@@ -1,4 +1,4 @@
-# Contributing to @novastera/rn-google-signin
+# Contributing to @novastera-oss/rn-google-signin
 
 Thank you for your interest in contributing to this React Native Google Sign-In package! We welcome contributions from the community.
 
