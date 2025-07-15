@@ -108,3 +108,4 @@ GoogleService-Info.plist
 .env.development.local
 .env.test.local
 .env.production.local 
+/.exemple-old-module

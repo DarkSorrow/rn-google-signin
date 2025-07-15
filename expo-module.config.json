@@ -1,0 +1,12 @@
+{
+  "platforms": [
+    "ios",
+    "android"
+  ],
+  "ios": {
+    "modules": ["RNGoogleSigninModule"]
+  },
+  "android": {
+    "modules": ["RNGoogleSigninModule"]
+  }
+} 

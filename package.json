@@ -9,10 +9,10 @@
   "source": "src/index",
   "exports": {
     ".": {
-      "source": "./src/index.tsx",
       "types": "./lib/typescript/src/index.d.ts",
       "default": "./lib/module/index.js"
     },
+    "./app.plugin.js": "./app.plugin.js",
     "./package.json": "./package.json"
   },
   "files": [
@@ -20,22 +20,17 @@
     "lib",
     "android",
     "ios",
-    "cpp",
     "*.podspec",
-    "dependencies.json",
-    "plugin",
-    "app.plugin.js",
-    "scripts",
-    "!ios/build",
+    "!lib/typescript/example",
     "!android/build",
-    "!android/gradle",
-    "!android/gradlew",
-    "!android/gradlew.bat",
-    "!android/local.properties",
+    "!ios/build",
     "!**/__tests__",
     "!**/__fixtures__",
     "!**/__mocks__",
-    "!**/.*"
+    "app.plugin.js",
+    "expo-module.config.json",
+    "plugin/build",
+    "README.md"
   ],
   "scripts": {
     "test": "npm run typecheck && npm run lint",
@@ -104,15 +99,23 @@
     "type": "modules",
     "jsSrcsDir": "src"
   },
-  "expo": {
-    "plugin": "./app.plugin.js"
-  },
+
   "react-native-builder-bob": {
     "source": "src",
     "output": "lib",
     "targets": [
-      ["module", { "esm": true }],
-      "typescript"
+      [
+        "module",
+        {
+          "esm": true
+        }
+      ],
+      [
+        "typescript",
+        {
+          "project": "tsconfig.build.json"
+        }
+      ]
     ]
   }
 }
