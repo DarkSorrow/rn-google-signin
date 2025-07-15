@@ -1,27 +1,19 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "lib/typescript",
+    "outDir": "lib",
+    "rootDir": "src",
     "declaration": true,
     "declarationMap": true,
-    "emitDeclarationOnly": false,
-    "noEmit": false,
-    "module": "commonjs",
-    "target": "es2017",
-    "moduleResolution": "node",
-    "jsx": "react-native",
-    "lib": ["es2017"],
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "verbatimModuleSyntax": false
+    "noEmit": false
   },
   "include": [
     "src/**/*"
   ],
   "exclude": [
+    "example", 
+    "lib", 
     "node_modules",
-    "lib",
-    "example",
     "**/__tests__/**",
     "**/__fixtures__/**",
     "**/__mocks__/**"

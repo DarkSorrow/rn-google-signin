@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "baseUrl": "./",
+    "rootDir": ".",
     "paths": {
       "@novastera-oss/rn-google-signin": ["./src/index"]
     },
@@ -9,8 +9,8 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",
-    "lib": ["esnext"],
-    "module": "esnext",
+    "lib": ["ESNext"],
+    "module": "ESNext",
     "moduleResolution": "bundler",
     "noEmit": true,
     "noFallthroughCasesInSwitch": true,
@@ -23,8 +23,8 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
-    "target": "esnext",
-    "verbatimModuleSyntax": false
+    "target": "ESNext",
+    "verbatimModuleSyntax": true
   },
   "exclude": [
     "node_modules",
