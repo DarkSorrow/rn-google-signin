@@ -24,6 +24,7 @@
     "*.podspec",
     "dependencies.json",
     "plugin",
+    "app.plugin.js",
     "scripts",
     "!ios/build",
     "!android/build",
@@ -104,7 +105,7 @@
     "jsSrcsDir": "src"
   },
   "expo": {
-    "plugin": "plugin/build/index.js"
+    "plugin": "./app.plugin.js"
   },
   "react-native-builder-bob": {
     "source": "src",
