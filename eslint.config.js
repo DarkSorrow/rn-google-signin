@@ -1,5 +1,5 @@
 // Minimal ESLint v9 configuration - only lint JS files, let TypeScript handle TS files
-export default [
+module.exports = [
   {
     ignores: [
       'node_modules/**',
