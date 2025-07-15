@@ -42,8 +42,8 @@ console.log('🔍 Verifying builds...');
 const requiredFiles = [
   'lib/index.js',
   'lib/index.d.ts',
-  'lib/GoogleSignin.js',
-  'lib/GoogleSignin.d.ts',
+  'lib/GoogleSignIn.js',
+  'lib/GoogleSignIn.d.ts',
   'plugin/build/index.js',
   'plugin/build/withGoogleSignin.js'
 ];
