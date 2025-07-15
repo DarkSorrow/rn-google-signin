@@ -2,7 +2,6 @@
 // Local test script to verify plugin setup before CI
 
 const fs = require('fs');
-const path = require('path');
 const { execSync } = require('child_process');
 
 console.log('🧪 Testing Plugin Setup Locally...\n');
