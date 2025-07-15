@@ -2,6 +2,8 @@
 
 Modern React Native Google Sign-In with Turbo Modules support for the new architecture.
 
+> **Note**: This package was created to address specific security and architectural requirements. The excellent `@react-native-google-signin/google-signin` library offers many more features and premium functionality. If you're using their premium features, please continue supporting their work.
+
 [![npm version](https://badge.fury.io/js/%40novastera%2Frn-google-signin.svg)](https://badge.fury.io/js/%40novastera%2Frn-google-signin)
 [![React Native](https://img.shields.io/badge/React%20Native-0.79%2B-blue)](https://reactnative.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typescriptlang.org/)
@@ -434,23 +436,32 @@ class GoogleSignInError extends Error {
 
 ## Migration from react-native-google-signin
 
-This package is designed as a drop-in replacement for `@react-native-google-signin/google-signin`. The API is nearly identical with these improvements:
+This package was created to address specific production security requirements where updating to newer Google Identity Services was necessary. The `@react-native-google-signin/google-signin` library offers many advanced features and premium functionality that this package does not provide.
+
+**Important Note**: If you're using the premium features of `@react-native-google-signin/google-signin`, you should continue using that library as it provides much more comprehensive functionality. This package focuses solely on basic Google Sign-In implementation.
+
+### When to Consider This Package:
+
+- You need to use the latest Google Identity Services for security compliance
+- You're building with React Native's new architecture (Turbo Modules)
+- You only need basic Google Sign-In functionality
+- You want minimal dependencies with centralized version management
 
 ### Key Differences:
 
-1. **Package name**: `@novastera/rn-google-signin` instead of `@react-native-google-signin/google-signin`
-2. **Turbo Modules**: Built for the new React Native architecture
-3. **Modern APIs**: Uses latest Google Identity Services
-4. **Better TypeScript**: Improved type definitions
+1. **Scope**: Focused only on basic sign-in (no premium features)
+2. **Architecture**: Built specifically for Turbo Modules
+3. **Dependencies**: Uses latest Google Identity Services
+4. **Management**: Centralized dependency versioning
 
-### Migration Steps:
+### Migration Steps (if needed):
 
-1. **Uninstall the old package**:
+1. **Uninstall the existing package**:
    ```bash
    npm uninstall @react-native-google-signin/google-signin
    ```
 
-2. **Install the new package**:
+2. **Install this package**:
    ```bash
    npm install @novastera/rn-google-signin
    ```
@@ -473,7 +484,7 @@ This package is designed as a drop-in replacement for `@react-native-google-sign
    GoogleSignIn.configure(config);
    ```
 
-The rest of your code should work without changes!
+The basic sign-in API is designed to be compatible to minimize code changes during migration.
 
 ## Troubleshooting
 
@@ -588,14 +599,4 @@ yarn lint
 
 ## License
 
-MIT © [Novastera](https://github.com/novastera)
-
-## Support
-
-- 📚 [Documentation](https://github.com/novastera/rn-google-signin#readme)
-- 🐛 [Issues](https://github.com/novastera/rn-google-signin/issues)
-- 💬 [Discussions](https://github.com/novastera/rn-google-signin/discussions)
-
----
-
-Made with ❤️ by [Novastera](https://novastera.com) 
+Apache 2.0 © [Novastera](https://novastera.com)

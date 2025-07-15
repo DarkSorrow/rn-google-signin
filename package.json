@@ -57,7 +57,7 @@
     "url": "git+https://github.com/novastera/rn-google-signin.git"
   },
   "author": "Novastera <contact@novastera.com>",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/novastera/rn-google-signin/issues"
   },
