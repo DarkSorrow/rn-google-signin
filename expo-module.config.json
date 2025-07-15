@@ -4,9 +4,17 @@
     "android"
   ],
   "ios": {
-    "modules": ["RNGoogleSigninModule"]
+    "modules": ["RNGoogleSigninModule"],
+    "appDelegateSubscribers": ["RNGoogleSigninModule"],
+    "infoPlist": {
+      "GIDClientID": "string"
+    }
   },
   "android": {
-    "modules": ["RNGoogleSigninModule"]
+    "modules": ["RNGoogleSigninModule"],
+    "package": "com.novastera.rngooglesignin",
+    "buildFeatures": {
+      "buildConfig": true
+    }
   }
 } 
