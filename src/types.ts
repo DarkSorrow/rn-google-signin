@@ -1,28 +1,4 @@
-export interface GoogleSignInUser {
-  user: {
-    id: string;
-    name: string | null;
-    email: string;
-    photo: string | null;
-    familyName: string | null;
-    givenName: string | null;
-  };
-  scopes: string[];
-  serverAuthCode: string | null;
-  idToken: string | null;
-}
-
-export interface GoogleSignInConfig {
-  webClientId?: string;
-  iosClientId?: string;
-  androidClientId?: string;
-  scopes?: string[];
-  offlineAccess?: boolean;
-  hostedDomain?: string;
-  forceCodeForRefreshToken?: boolean;
-  accountName?: string;
-  googleServicePlistPath?: string;
-}
+export type { GoogleSignInUser, GoogleSignInConfig } from './spec/NativeGoogleSignin';
 
 export interface GoogleSignInTokens {
   accessToken: string;

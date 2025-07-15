@@ -105,7 +105,7 @@
   "codegenConfig": {
     "name": "RNGoogleSigninSpec",
     "type": "modules",
-    "jsSrcsDir": "src",
+    "jsSrcsDir": "src/spec",
     "android": {
       "javaPackageName": "com.novastera.rngooglesignin"
     }

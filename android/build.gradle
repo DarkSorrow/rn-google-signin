@@ -12,6 +12,7 @@ def isNewArchitectureEnabled() {
 
 if (isNewArchitectureEnabled()) {
   apply plugin: "com.facebook.react"
+  apply plugin: "com.facebook.react.codegen"
 }
 
 apply plugin: 'com.android.library'
@@ -87,21 +88,51 @@ dependencies {
 
 // Fix Gradle task dependency issues for React Native autolinking
 afterEvaluate {
-  // Fix resource packaging dependencies
-  tasks.named("packageDebugResources") {
-    dependsOn("generateDebugResValues")
+  // Fix resource packaging dependencies - handle naming inconsistencies
+  tasks.matching { task ->
+    task.name.contains("packageDebugResources")
+  }.configureEach { task ->
+    def resValuesTask = tasks.findByName("generateDebugResValues")
+    if (resValuesTask == null) {
+      // Try to find by pattern if exact name doesn't work
+      def resTasks = tasks.findAll { it.name.contains("generateDebugResValues") }
+      if (!resTasks.isEmpty()) {
+        resValuesTask = resTasks.first()
+      }
+    }
+    if (resValuesTask != null) {
+      task.dependsOn(resValuesTask)
+    }
   }
-  tasks.named("packageReleaseResources") {
-    dependsOn("generateReleaseResValues")
+  
+  tasks.matching { task ->
+    task.name.contains("packageReleaseResources")
+  }.configureEach { task ->
+    def resValuesTask = tasks.findByName("generateReleaseResValues")
+    if (resValuesTask == null) {
+      // Try to find by pattern if exact name doesn't work
+      def resTasks = tasks.findAll { it.name.contains("generateReleaseResValues") }
+      if (!resTasks.isEmpty()) {
+        resValuesTask = resTasks.first()
+      }
+    }
+    if (resValuesTask != null) {
+      task.dependsOn(resValuesTask)
+    }
   }
   
   // Fix codegen task dependencies for React Native New Architecture
-  tasks.matching { task ->
-    task.name.contains("generateCodegenArtifactsFromSchema")
-  }.configureEach { task ->
-    def schemaTask = tasks.findByName("generateCodegenSchemaFromJavaScript")
-    if (schemaTask != null) {
-      task.dependsOn(schemaTask)
+  if (isNewArchitectureEnabled()) {
+    tasks.matching { task ->
+      task.name.contains("generateCodegenArtifactsFromSchema")
+    }.configureEach { task ->
+      // Find the corresponding schema task
+      def schemaTaskName = task.name.replace("generateCodegenArtifactsFromSchema", "generateCodegenSchemaFromJavaScript")
+      def schemaTask = tasks.findByName(schemaTaskName)
+      
+      if (schemaTask != null) {
+        task.dependsOn(schemaTask)
+      }
     }
   }
 }

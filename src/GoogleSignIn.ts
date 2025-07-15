@@ -1,4 +1,4 @@
-import NativeGoogleSignin from './NativeGoogleSignin';
+import NativeGoogleSignin from './spec/NativeGoogleSignin';
 import type {
   GoogleSignInUser,
   GoogleSignInConfig,

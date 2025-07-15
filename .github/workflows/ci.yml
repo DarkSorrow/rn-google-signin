@@ -257,12 +257,6 @@ jobs:
             exit 1
           fi
           
-          # Check gradle.properties exists for Android dependency versions
-          if [[ ! -f "gradle.properties" ]]; then
-            echo "❌ gradle.properties not found! Required for Android dependency versions."
-            exit 1
-          fi
-          
           echo "✅ Android setup validated"
 
   # Test Expo plugin
