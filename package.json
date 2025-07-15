@@ -97,7 +97,10 @@
   "codegenConfig": {
     "name": "RNGoogleSigninSpec",
     "type": "modules",
-    "jsSrcsDir": "src"
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "com.novastera.rngooglesignin"
+    }
   },
 
   "react-native-builder-bob": {
