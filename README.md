@@ -558,7 +558,8 @@ git commit -m "Update GoogleSignIn to <commit-hash>"
 
 This package uses a centralized dependency management system:
 
-- **`dependencies.json`**: Contains all third-party dependency versions
+- **`dependencies.json`**: Contains iOS dependency versions (for podspec)
+- **`gradle.properties`**: Contains Android dependency versions (standard Gradle approach)
 - **`package.json`**: Contains the package version and React Native compatibility
 - **Automatic synchronization**: Scripts and build files read from these sources
 
@@ -573,7 +574,8 @@ To update dependency versions:
 
 2. **Update Android dependencies**:
    ```bash
-   # Edit dependencies.json under dependencies.googleSignIn.android
+   # For Android: Edit gradle.properties
+# For iOS: Edit dependencies.json under dependencies.googleSignIn.ios
    # Gradle will automatically use new versions
    ```
 

@@ -30,6 +30,7 @@
     "app.plugin.js",
     "expo-module.config.json",
     "plugin/build",
+    "react-native.config.js",
     "README.md"
   ],
   "scripts": {
@@ -97,7 +98,10 @@
   "codegenConfig": {
     "name": "RNGoogleSigninSpec",
     "type": "modules",
-    "jsSrcsDir": "src"
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "com.novastera.rngooglesignin"
+    }
   },
 
   "react-native-builder-bob": {
