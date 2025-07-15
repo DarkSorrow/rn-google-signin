@@ -1,0 +1,398 @@
+name: CI and Publish
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [published]
+
+jobs:
+  # Setup and validation job
+  setup:
+    name: Setup and Validate
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'  # Initialize Git submodules for iOS dependencies
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Validate package.json
+        run: |
+          echo "Validating package.json configuration..."
+          
+          # Extract and validate the 'files' field
+          FILES=$(node -p "JSON.stringify(require('./package.json').files || [])")
+          echo "Files included in package: $FILES"
+          
+          # Check for required files/directories
+          for REQUIRED in "src" "lib" "android" "ios" "plugin" "dependencies.json" "*.podspec"; do
+            if ! echo "$FILES" | grep -q "$REQUIRED"; then
+              echo "⚠️ Warning: '$REQUIRED' might be missing from package.json 'files' field"
+            fi
+          done
+          
+          echo "✅ Package configuration validated"
+      
+      - name: Get version from release or package.json
+        id: get-version
+        run: |
+          # If this is triggered by a release, use the release tag
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"  # Remove 'v' prefix
+            echo "Version from release: $VERSION"
+          # Otherwise use package.json version
+          else
+            VERSION=$(node -p "require('./package.json').version")
+            echo "Version from package.json: $VERSION"
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using version: $VERSION"
+      
+      - name: Upload Repository State
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-state
+          path: .
+          retention-days: 1
+
+  # TypeScript and Linting
+  lint-and-typecheck:
+    name: Lint and TypeCheck
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Repository
+        uses: actions/download-artifact@v4
+        with:
+          name: repo-state
+          path: .
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Run TypeScript Typecheck
+        run: npm run typecheck
+      
+      - name: Run ESLint
+        run: npm run lint
+
+  # Test JavaScript/TypeScript
+  test-js:
+    name: Test JavaScript/TypeScript
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Repository
+        uses: actions/download-artifact@v4
+        with:
+          name: repo-state
+          path: .
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Run Tests
+        run: npm test
+
+  # Build and validate iOS setup
+  test-ios-setup:
+    name: Test iOS Setup
+    needs: setup
+    runs-on: macos-latest
+    steps:
+      - name: Download Repository
+        uses: actions/download-artifact@v4
+        with:
+          name: repo-state
+          path: .
+      
+      - name: Restore file permissions
+        run: |
+          chmod +x scripts/*.sh
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Test iOS Dependencies Setup
+        run: |
+          # Test iOS dependency setup script
+          ./scripts/setup_ios_dependencies.sh
+          
+          # Verify iOS submodule was set up correctly
+          if [ ! -d "ios/third-party/GoogleSignIn-iOS" ]; then
+            echo "❌ iOS GoogleSignIn submodule setup failed!"
+            exit 1
+          fi
+          
+          if [ ! -f "ios/third-party/GoogleSignIn-iOS/GoogleSignIn.podspec" ]; then
+            echo "❌ GoogleSignIn podspec not found!"
+            exit 1
+          fi
+          
+          echo "✅ iOS dependencies setup validated"
+      
+      - name: Validate iOS Podspec
+        run: |
+          # Check if the podspec exists and contains required sections
+          if [ ! -f "rn-google-signin.podspec" ]; then
+            echo "❌ rn-google-signin.podspec not found"
+            exit 1
+          fi
+          
+          # Validate podspec content
+          if grep -q "s.dependency.*GoogleSignIn" rn-google-signin.podspec && 
+             grep -q "install_modules_dependencies" rn-google-signin.podspec; then
+            echo "✅ Podspec contains required dependencies and Turbo Module setup"
+          else
+            echo "❌ Podspec is missing required sections"
+            exit 1
+          fi
+
+  # Build and validate Android setup  
+  test-android-setup:
+    name: Test Android Setup
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Repository
+        uses: actions/download-artifact@v4
+        with:
+          name: repo-state
+          path: .
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Validate Android Module
+        run: |
+          # Check Android source files exist
+          if [ ! -f "android/src/main/java/com/novastera/rngooglesignin/RNGoogleSigninModule.kt" ]; then
+            echo "❌ Android module source not found!"
+            exit 1
+          fi
+          
+          if [ ! -f "android/src/main/java/com/novastera/rngooglesignin/RNGoogleSigninPackage.kt" ]; then
+            echo "❌ Android package source not found!"
+            exit 1
+          fi
+          
+          # Check build.gradle reads dependencies.json correctly
+          if ! grep -q "dependencies.json" android/build.gradle; then
+            echo "❌ Android build.gradle doesn't read from dependencies.json!"
+            exit 1
+          fi
+          
+          echo "✅ Android setup validated"
+
+  # Test Expo plugin
+  test-expo-plugin:
+    name: Test Expo Plugin
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Repository
+        uses: actions/download-artifact@v4
+        with:
+          name: repo-state
+          path: .
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Build Expo Plugin
+        run: npm run build:plugin
+      
+      - name: Validate Plugin Build
+        run: |
+          if [ ! -f "plugin/build/withGoogleSignin.js" ]; then
+            echo "❌ Expo plugin build failed!"
+            exit 1
+          fi
+          
+          echo "✅ Expo plugin built successfully"
+          ls -la plugin/build/
+
+  # Successful CI check
+  ci-success:
+    name: CI Success
+    needs: [setup, lint-and-typecheck, test-js, test-ios-setup, test-android-setup, test-expo-plugin]
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - name: Check Status
+        run: |
+          if [ "${{ needs.setup.result }}" = "success" ] && 
+             [ "${{ needs.lint-and-typecheck.result }}" = "success" ] && 
+             [ "${{ needs.test-js.result }}" = "success" ] && 
+             [ "${{ needs.test-ios-setup.result }}" = "success" ] && 
+             [ "${{ needs.test-android-setup.result }}" = "success" ] && 
+             [ "${{ needs.test-expo-plugin.result }}" = "success" ]; then
+            echo "✅ All CI checks passed!"
+            exit 0
+          else
+            echo "❌ One or more CI checks failed!"
+            echo "Setup: ${{ needs.setup.result }}"
+            echo "Lint & TypeCheck: ${{ needs.lint-and-typecheck.result }}"
+            echo "JS Tests: ${{ needs.test-js.result }}"
+            echo "iOS Setup: ${{ needs.test-ios-setup.result }}"
+            echo "Android Setup: ${{ needs.test-android-setup.result }}"
+            echo "Expo Plugin: ${{ needs.test-expo-plugin.result }}"
+            exit 1
+          fi
+
+  # Publish to NPM - only runs when you manually create a GitHub release
+  publish:
+    name: Publish to NPM
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: [ci-success]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Repository
+        uses: actions/download-artifact@v4
+        with:
+          name: repo-state
+          path: .
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      
+      - name: Install Dependencies
+        run: npm ci
+      
+      - name: Extract version from release tag
+        id: get-version
+        run: |
+          # Extract version from the release tag (remove 'v' prefix if present)
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"  # Remove 'v' prefix
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing version: $VERSION"
+          
+          # Validate semver format
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "❌ Error: Version '$VERSION' does not follow semver format x.y.z(-suffix)"
+            exit 1
+          else
+            echo "✅ Version '$VERSION' follows semver format"
+          fi
+      
+      - name: Update version in package.json
+        run: |
+          VERSION=${{ steps.get-version.outputs.version }}
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          
+          echo "Target version: $VERSION"
+          echo "Current version: $CURRENT_VERSION"
+          
+          if [ "$VERSION" = "$CURRENT_VERSION" ]; then
+            echo "✅ Version is already correct ($VERSION), no update needed"
+          else
+            echo "Updating version from $CURRENT_VERSION to $VERSION"
+            npm version "$VERSION" --no-git-tag-version
+            echo "✅ Version updated successfully"
+          fi
+      
+      - name: Build package
+        run: |
+          # Build TypeScript and plugin
+          npm run prepare
+          
+          # Verify the build output
+          if [ ! -d "lib" ] || [ ! "$(ls -A lib 2>/dev/null)" ]; then
+            echo "❌ Build failed - lib directory is empty or missing"
+            exit 1
+          fi
+          
+          if [ ! -d "plugin/build" ] || [ ! "$(ls -A plugin/build 2>/dev/null)" ]; then
+            echo "❌ Plugin build failed - plugin/build directory is empty or missing"
+            exit 1
+          fi
+          
+          echo "✅ Build completed successfully"
+          echo "Built lib contents:"
+          ls -la lib
+          echo "Built plugin contents:"
+          ls -la plugin/build
+      
+      - name: Verify package content
+        run: |
+          echo "Checking files to be included in the package..."
+          
+          # Verify core files and directories exist
+          for REQUIRED in "src" "lib" "android" "ios" "plugin" "dependencies.json" "rn-google-signin.podspec"; do
+            if [ ! -e "$REQUIRED" ]; then
+              echo "❌ Required file/directory '$REQUIRED' is missing!"
+              exit 1
+            else
+              echo "✅ Found: $REQUIRED"
+            fi
+          done
+          
+          # Verify iOS submodule is present (should be from artifacts)
+          if [ ! -d "ios/third-party/GoogleSignIn-iOS" ]; then
+            echo "⚠️ Warning: iOS GoogleSignIn submodule not found in package"
+          else
+            echo "✅ iOS GoogleSignIn submodule present"
+          fi
+          
+          echo "✅ Package content verification completed"
+      
+      - name: Publish to NPM
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} 
