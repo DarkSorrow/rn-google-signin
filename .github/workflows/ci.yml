@@ -38,12 +38,26 @@ jobs:
           FILES=$(node -p "JSON.stringify(require('./package.json').files || [])")
           echo "Files included in package: $FILES"
           
-          # Check for required files/directories
+          # Check for required files/directories in package.json
           for REQUIRED in "src" "lib" "android" "ios" "plugin" "dependencies.json" "*.podspec"; do
             if ! echo "$FILES" | grep -q "$REQUIRED"; then
               echo "⚠️ Warning: '$REQUIRED' might be missing from package.json 'files' field"
             fi
           done
+          
+          # Validate React Native Builder Bob configuration
+          BOB_CONFIG=$(node -p "JSON.stringify(require('./package.json')['react-native-builder-bob'] || {})")
+          echo "React Native Builder Bob config: $BOB_CONFIG"
+          
+          if ! echo "$BOB_CONFIG" | grep -q "module"; then
+            echo "❌ Error: React Native Builder Bob 'module' target missing!"
+            exit 1
+          fi
+          
+          if ! echo "$BOB_CONFIG" | grep -q "typescript"; then
+            echo "❌ Error: React Native Builder Bob 'typescript' target missing!"
+            exit 1
+          fi
           
           echo "✅ Package configuration validated"
       
@@ -95,8 +109,34 @@ jobs:
       - name: Run Code Quality Checks
         run: npm test
         
-      - name: Build TypeScript
+      - name: Build Library with React Native Builder Bob
         run: npm run build
+        
+      - name: Verify Build Output
+        run: |
+          echo "Checking React Native Builder Bob build outputs..."
+          
+          # Check ES module build
+          if [ ! -f "lib/module/index.js" ]; then
+            echo "❌ ES module build missing!"
+            exit 1
+          fi
+          
+          # Check TypeScript definitions
+          if [ ! -f "lib/typescript/src/index.d.ts" ]; then
+            echo "❌ TypeScript definitions missing!"
+            exit 1
+          fi
+          
+          # Check plugin build
+          if [ ! -f "plugin/build/withGoogleSignin.js" ]; then
+            echo "❌ Expo plugin build missing!"
+            exit 1
+          fi
+          
+          echo "✅ All build outputs verified"
+          echo "Built lib structure:"
+          find lib -type f -name "*.js" -o -name "*.d.ts" | head -10
 
   # Build and validate iOS setup
   test-ios-setup:
@@ -240,7 +280,7 @@ jobs:
       - name: Install Dependencies
         run: npm ci
       
-      - name: Build Expo Plugin
+      - name: Build Expo Plugin Only
         run: npm run build:plugin
       
       - name: Validate Plugin Build
@@ -250,8 +290,25 @@ jobs:
             exit 1
           fi
           
+          if [ ! -f "plugin/build/index.js" ]; then
+            echo "❌ Expo plugin index build failed!"
+            exit 1
+          fi
+          
           echo "✅ Expo plugin built successfully"
+          echo "Plugin build contents:"
           ls -la plugin/build/
+          
+          # Test that plugin exports are correct
+          echo "Testing plugin exports..."
+          node -e "
+            const plugin = require('./plugin/build/index.js');
+            if (!plugin.default && !plugin.withGoogleSignin) {
+              console.error('❌ Plugin exports missing!');
+              process.exit(1);
+            }
+            console.log('✅ Plugin exports validated');
+          "
 
   # Successful CI check
   ci-success:
@@ -336,12 +393,17 @@ jobs:
       
       - name: Build package
         run: |
-          # Build TypeScript and plugin
+          # Build with React Native Builder Bob + plugin
           npm run prepare
           
-          # Verify the build output
-          if [ ! -d "lib" ] || [ ! "$(ls -A lib 2>/dev/null)" ]; then
-            echo "❌ Build failed - lib directory is empty or missing"
+          # Verify the React Native Builder Bob build output
+          if [ ! -d "lib/module" ] || [ ! "$(ls -A lib/module 2>/dev/null)" ]; then
+            echo "❌ Build failed - ES module build is empty or missing"
+            exit 1
+          fi
+          
+          if [ ! -d "lib/typescript" ] || [ ! "$(ls -A lib/typescript 2>/dev/null)" ]; then
+            echo "❌ Build failed - TypeScript definitions build is empty or missing"
             exit 1
           fi
           
@@ -351,10 +413,12 @@ jobs:
           fi
           
           echo "✅ Build completed successfully"
-          echo "Built lib contents:"
-          ls -la lib
+          echo "Built ES module contents:"
+          ls -la lib/module/
+          echo "Built TypeScript definitions:"
+          ls -la lib/typescript/src/
           echo "Built plugin contents:"
-          ls -la plugin/build
+          ls -la plugin/build/
       
       - name: Verify package content
         run: |
@@ -369,6 +433,19 @@ jobs:
               echo "✅ Found: $REQUIRED"
             fi
           done
+          
+          # Verify React Native Builder Bob build structure
+          if [ ! -f "lib/module/index.js" ]; then
+            echo "❌ ES module build output missing!"
+            exit 1
+          fi
+          
+          if [ ! -f "lib/typescript/src/index.d.ts" ]; then
+            echo "❌ TypeScript definitions missing!"
+            exit 1
+          fi
+          
+          echo "✅ React Native Builder Bob outputs verified"
           
           # Verify iOS submodule is present (should be from artifacts)
           if [ ! -d "ios/third-party/GoogleSignIn-iOS" ]; then
