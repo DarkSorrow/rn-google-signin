@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "lib/typescript"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "**/__tests__/**/*",
+    "**/__fixtures__/**/*",
+    "**/__mocks__/**/*"
+  ]
+} 
