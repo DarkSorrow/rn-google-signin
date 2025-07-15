@@ -87,21 +87,52 @@ dependencies {
 
 // Fix Gradle task dependency issues for React Native autolinking
 afterEvaluate {
-  // Fix resource packaging dependencies
-  tasks.named("packageDebugResources") {
-    dependsOn("generateDebugResValues")
+  // Fix resource packaging dependencies - handle naming inconsistencies
+  tasks.matching { task ->
+    task.name.contains("packageDebugResources")
+  }.configureEach { task ->
+    def resValuesTask = tasks.findByName("generateDebugResValues")
+    if (resValuesTask == null) {
+      // Try to find by pattern if exact name doesn't work
+      def resTasks = tasks.findAll { it.name.contains("generateDebugResValues") }
+      if (!resTasks.isEmpty()) {
+        resValuesTask = resTasks.first()
+      }
+    }
+    if (resValuesTask != null) {
+      task.dependsOn(resValuesTask)
+    }
   }
-  tasks.named("packageReleaseResources") {
-    dependsOn("generateReleaseResValues")
+  
+  tasks.matching { task ->
+    task.name.contains("packageReleaseResources")
+  }.configureEach { task ->
+    def resValuesTask = tasks.findByName("generateReleaseResValues")
+    if (resValuesTask == null) {
+      // Try to find by pattern if exact name doesn't work
+      def resTasks = tasks.findAll { it.name.contains("generateReleaseResValues") }
+      if (!resTasks.isEmpty()) {
+        resValuesTask = resTasks.first()
+      }
+    }
+    if (resValuesTask != null) {
+      task.dependsOn(resValuesTask)
+    }
   }
   
   // Fix codegen task dependencies for React Native New Architecture
+  // Handle the specific naming inconsistency between underscore and dash
   tasks.matching { task ->
     task.name.contains("generateCodegenArtifactsFromSchema")
   }.configureEach { task ->
-    def schemaTask = tasks.findByName("generateCodegenSchemaFromJavaScript")
-    if (schemaTask != null) {
-      task.dependsOn(schemaTask)
+    // Find all schema tasks that might exist with different naming patterns
+    def schemaTasks = tasks.findAll { schemaTask ->
+      schemaTask.name.contains("generateCodegenSchemaFromJavaScript")
+    }
+    
+    if (!schemaTasks.isEmpty()) {
+      // Use the first matching schema task
+      task.dependsOn(schemaTasks.first())
     }
   }
 }
