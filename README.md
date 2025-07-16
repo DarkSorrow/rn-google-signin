@@ -68,9 +68,26 @@ If you're not using Firebase, you can provide the `iosUrlScheme` option:
 ## Usage
 
 ```typescript
-import { multiply } from '@novastera-oss/rn-google-signin';
+import GoogleSignin from '@novastera-oss/rn-google-signin';
 
-const result = multiply(2, 3); // Returns 6
+// Configure the module
+await GoogleSignin.configure({
+  webClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+  offlineAccess: true,
+  scopes: ['profile', 'email']
+});
+
+// Check if Play Services are available
+const hasPlayServices = await GoogleSignin.hasPlayServices();
+
+// Sign in
+const userInfo = await GoogleSignin.signIn();
+
+// Get current user
+const currentUser = await GoogleSignin.getCurrentUser();
+
+// Sign out
+await GoogleSignin.signOut();
 ```
 
 ## Development

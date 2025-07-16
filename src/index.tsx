@@ -1,7 +1,16 @@
 import RnGoogleSignin from './NativeRnGoogleSignin';
 
-export function multiply(a: number, b: number): number {
-  return RnGoogleSignin.multiply(a, b);
-}
+// Re-export types for users
+export type {
+  ConfigureParams,
+  SignInParams,
+  AddScopesParams,
+  HasPlayServicesParams,
+  User,
+  SignInResponse,
+  SignInSilentlyResponse,
+  GetTokensResponse,
+} from './NativeRnGoogleSignin';
 
-// This is the main TurboModule - no Expo dependencies here
+// Export the module as default
+export default RnGoogleSignin;
