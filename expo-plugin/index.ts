@@ -51,39 +51,12 @@ function validateOptions(options: GoogleSigninOptions) {
   }
 }
 
-// Plugin for manual setup (without Firebase)
-const withGoogleSigninManual: ConfigPlugin<GoogleSigninOptions> = (config, options) => {
-  validateOptions(options);
-  return withPlugins(config, [
-    // iOS - add URL scheme manually
-    (cfg) => withGoogleUrlScheme(cfg, options),
-    // Android - add required metadata
-    withGoogleSigninAndroidManifest,
-  ]);
-};
-
 // Add Google URL scheme to iOS Info.plist
 const withGoogleUrlScheme: ConfigPlugin<GoogleSigninOptions> = (config, options) => {
   return withInfoPlist(config, (config) => {
     config.modResults = appendScheme(options.iosUrlScheme!, config.modResults);
     return config;
   });
-};
-
-// Plugin for automatic setup (with Firebase)
-const withGoogleSigninAutomatic: ConfigPlugin = (config) => {
-  return withPlugins(config, [
-    // Android - handle google-services.json
-    AndroidConfig.GoogleServices.withClassPath,
-    AndroidConfig.GoogleServices.withApplyPlugin,
-    AndroidConfig.GoogleServices.withGoogleServicesFile,
-    
-    // iOS - handle GoogleService-Info.plist
-    IOSConfig.Google.withGoogleServicesFile,
-    
-    // Add required metadata for both platforms
-    withGoogleSigninAndroidManifest,
-  ]);
 };
 
 // Android manifest configuration
@@ -119,6 +92,33 @@ const withGoogleSigninAndroidManifest: ConfigPlugin = (config) => {
   });
 };
 
+// Plugin for manual setup (without Firebase)
+const withGoogleSigninManual: ConfigPlugin<GoogleSigninOptions> = (config, options) => {
+  validateOptions(options);
+  return withPlugins(config, [
+    // iOS - add URL scheme manually
+    (cfg) => withGoogleUrlScheme(cfg, options),
+    // Android - add required metadata
+    withGoogleSigninAndroidManifest,
+  ]);
+};
+
+// Plugin for automatic setup (with Firebase)
+const withGoogleSigninAutomatic: ConfigPlugin = (config) => {
+  return withPlugins(config, [
+    // Android - handle google-services.json
+    AndroidConfig.GoogleServices.withClassPath,
+    AndroidConfig.GoogleServices.withApplyPlugin,
+    AndroidConfig.GoogleServices.withGoogleServicesFile,
+    
+    // iOS - handle GoogleService-Info.plist
+    IOSConfig.Google.withGoogleServicesFile,
+    
+    // Add required metadata for both platforms
+    withGoogleSigninAndroidManifest,
+  ]);
+};
+
 // Main plugin function - handles both automatic and manual modes
 const withRNGoogleSignin: ConfigPlugin<GoogleSigninOptions | void> = (config, options) => {
   return options
@@ -127,4 +127,6 @@ const withRNGoogleSignin: ConfigPlugin<GoogleSigninOptions | void> = (config, op
 };
 
 // Export the plugin with run-once protection
-export default createRunOncePlugin(withRNGoogleSignin, GOOGLE_SIGNIN_PLUGIN, getPackageVersion()); 
+const plugin = createRunOncePlugin(withRNGoogleSignin, GOOGLE_SIGNIN_PLUGIN, getPackageVersion());
+
+export default plugin; 

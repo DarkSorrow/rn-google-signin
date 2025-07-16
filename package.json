@@ -10,6 +10,10 @@
       "types": "./lib/typescript/src/index.d.ts",
       "default": "./lib/module/index.js"
     },
+    "./expo-plugin": {
+      "types": "./lib/typescript/expo-plugin/index.d.ts",
+      "default": "./expo-plugin/index.ts"
+    },
     "./package.json": "./package.json"
   },
   "files": [
