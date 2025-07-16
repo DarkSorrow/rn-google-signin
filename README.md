@@ -4,13 +4,15 @@ A modern React Native Google Sign-In library with Turbo Modules support, built w
 
 ## Features
 
-- **Modern Google Identity Library**: Uses the latest Google Identity library instead of the deprecated Google Sign-In SDK
+- **Modern Google Identity Library**: Uses the latest Google Identity library with Credential Manager and AuthorizationClient
+- **No Legacy Dependencies**: Completely removes deprecated Google Sign-In SDK (removed from Google Play Services in 2025)
 - **Turbo Modules**: Built with React Native's new Turbo Modules architecture for better performance
 - **TypeScript Support**: Full TypeScript support with comprehensive type definitions
 - **Expo Plugin**: Includes an Expo config plugin for easy integration
 - **Cross-Platform**: Supports both iOS and Android
 - **Async/Await**: Modern Promise-based API
 - **Security**: Built-in nonce support for enhanced security
+- **Race Condition Free**: Single promise management prevents conflicts
 
 ## Installation
 
@@ -133,33 +135,52 @@ const userInfo = await GoogleSignin.signIn({
 
 If no nonce is provided, the library will generate one automatically.
 
-## Migration from Libraries Using Deprecated Modules
+## Migration from Legacy Google Sign-In
 
-This library was created to provide a simple, secure Google Sign-In flow using the latest native libraries. If you're migrating from libraries using deprecated modules:
+This library uses the **modern Google Identity APIs** and completely removes the deprecated Google Sign-In SDK. According to [Google's migration documentation](https://developer.android.com/identity/sign-in/legacy-gsi-migration), Google Sign-In for Android is deprecated and will be removed from Google Play Services Auth SDK in 2025.
+
+### Key Changes:
+
+1. **Authentication**: Uses Credential Manager instead of GoogleSignInClient
+2. **Authorization**: Uses AuthorizationClient for scope management
+3. **No Legacy Dependencies**: Removes all deprecated Google Sign-In SDK code
+4. **Single Promise Management**: Prevents race conditions with unified promise handling
+
+### Migration Steps:
 
 1. Replace the import:
    ```typescript
    // Previous (using deprecated modules)
    import { GoogleSignIn } from '@react-native-google-signin/google-signin';
    
-   // New (using latest native libraries)
+   // New (using modern Google Identity APIs)
    import GoogleSignin from '@novastera-oss/rn-google-signin';
    ```
 
-2. Update method calls to use the new API:
+2. Update configuration (simplified):
    ```typescript
-   // Previous
+   // Previous (legacy)
    await GoogleSignIn.configure({
      webClientId: 'your-client-id',
+     offlineAccess: true, // No longer needed
+     scopes: ['email', 'profile'] // Use addScopes() instead
    });
    
-   // New (same API, but with latest native libraries)
+   // New (modern)
    await GoogleSignin.configure({
      webClientId: 'your-client-id',
    });
    ```
 
-**Note**: This library focuses on providing a simple, secure Google Sign-In flow with the latest native libraries. It has fewer features than comprehensive solutions but ensures your authentication uses up-to-date, secure APIs. If you need advanced features, consider the premium offerings from @react-native-google-signin/google-signin who did an amazing job.
+3. Request scopes when needed:
+   ```typescript
+   // Request additional scopes when user performs an action
+   const scopeResult = await GoogleSignin.addScopes([
+     'https://www.googleapis.com/auth/drive.readonly'
+   ]);
+   ```
+
+**Note**: This library provides a clean, modern implementation using Google's current recommended APIs. It's future-proof and follows Google's latest authentication best practices.
 
 ### Silent Sign In
 

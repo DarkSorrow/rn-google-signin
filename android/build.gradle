@@ -84,12 +84,9 @@ dependencies {
   implementation "androidx.credentials:credentials-play-services-auth:1.5.0"
   implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
   
-  // Identity Manager for full OAuth support
-  implementation "com.google.android.gms:play-services-auth:21.3.0"
+  // AuthorizationClient for modern scope management
+  implementation "com.google.android.gms:play-services-identity:18.1.0"
   
-  // Coroutines for async operations
-  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2"
-  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2"
 }
 
 react {

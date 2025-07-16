@@ -6,6 +6,8 @@ import type { GoogleSignInErrorCode } from '@novastera-oss/rn-google-signin';
 export default function App() {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [userInfo, setUserInfo] = useState<any>(null);
 
   useEffect(() => {
     // Configure Google Sign-In (synchronous)
@@ -40,27 +42,50 @@ export default function App() {
 
   const signIn = async () => {
     try {
-      const result = await RnGoogleSignin.signIn(null);
-      setUser(result.user);
-      setIsSignedIn(true);
-      Alert.alert('Success', 'Signed in successfully!');
+      setLoading(true);
+      console.log('Starting Google Sign In...');
+      
+      // Always pass an options object, even if empty
+      const userInfo = await RnGoogleSignin.signIn({});
+      console.log('Sign in successful:', userInfo);
+      
+      if (userInfo.idToken) {
+        console.log('ID Token received:', userInfo.idToken.substring(0, 20) + '...');
+        // Process the sign in
+        setUserInfo(userInfo);
+      } else {
+        throw new Error('No ID token received');
+      }
     } catch (error: any) {
       console.error('Sign in error:', error);
-      const errorCode = error.code as GoogleSignInErrorCode;
-      switch (errorCode) {
+      
+      let errorMessage = 'Unknown error occurred';
+      switch (error.code) {
         case 'sign_in_cancelled':
-          Alert.alert('Cancelled', 'Sign in was cancelled');
+          errorMessage = 'Sign in was cancelled by the user';
           break;
-        case 'not_configured':
-          Alert.alert('Error', 'Google Sign In is not configured');
+        case 'in_progress':
+          errorMessage = 'Sign in is already in progress';
           break;
         case 'play_services_not_available':
-          Alert.alert('Error', 'Google Play Services not available');
+          errorMessage = 'Google Play Services not available';
+          break;
+        case 'network_error':
+          errorMessage = 'Network error occurred';
+          break;
+        case 'timeout_error':
+          errorMessage = 'Sign in timed out';
+          break;
+        case 'no_credential':
+          errorMessage = 'No credential available';
           break;
         default:
-          Alert.alert('Error', error.message || 'Sign in failed');
-          break;
+          errorMessage = error.message || 'Sign in failed';
       }
+      
+      Alert.alert('Sign In Error', errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 

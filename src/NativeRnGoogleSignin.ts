@@ -68,26 +68,13 @@ export type GoogleSignInErrorCode =
   | 'sign_in_error'          // Generic sign in error
   | 'not_configured'         // Google Sign In is not configured
   | 'no_activity'            // No current activity available
-  | 'client_error'           // Google Sign In client not initialized
-  | 'token_error'            // Token-related error
-  | 'add_scopes_error'       // Failed to add scopes
-  | 'revoke_error'           // Failed to revoke access
-  | 'play_services_not_available' // Play services not available (Android only)
-  | 'configuration_error'    // Configuration error
-  | 'conversion_error'       // Failed to convert user data
   | 'no_credential'          // No credential available
   | 'parsing_error'          // Failed to parse Google ID token (Android only)
-  | 'unknown_error'          // Unknown error occurred
-  | 'emm_error'              // Enterprise Mobility Management error (iOS only)
-  | 'keychain_error'         // Keychain error occurred (iOS only)
+  | 'play_services_not_available' // Play services not available (Android only)
   | 'network_error'          // Network error
-  | 'not_in_keychain'       // User not found in keychain (iOS only)
-  | 'scopes_error'           // Scope error occurred (iOS only)
-  | 'sign_in_failed'         // Sign in failed
-  | 'in_progress'            // Sign in is already in progress
-  | 'invalid_account'        // Invalid account
-  | 'internal_error'         // Internal error
-  | 'developer_error';       // Developer error
+  | 'authorization_error'    // Authorization error
+  | 'authorization_cancelled' // User cancelled authorization
+  | 'unknown_error';         // Unknown error occurred
 
 export interface Spec extends TurboModule {
   // Configuration

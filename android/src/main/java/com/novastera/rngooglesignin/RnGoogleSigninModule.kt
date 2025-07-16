@@ -1,10 +1,7 @@
 package com.novastera.rngooglesignin
 
-import com.google.android.gms.tasks.Task
-import android.net.Uri
 import android.app.Activity
 import android.content.Intent
-import android.os.CancellationSignal
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
@@ -12,23 +9,18 @@ import androidx.credentials.CredentialManagerCallback
 import androidx.credentials.exceptions.ClearCredentialException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialResponse
 import com.facebook.react.bridge.*
 import com.facebook.react.module.annotations.ReactModule
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
-import com.google.android.gms.common.api.Scope
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.security.SecureRandom
 import java.util.Base64
+import java.util.concurrent.Executors
+import java.lang.ref.WeakReference
 
 @ReactModule(name = RNGoogleSigninModule.NAME)
 class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
@@ -36,33 +28,25 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
     companion object {
         const val NAME = "RnGoogleSignin"
-        private const val RC_SIGN_IN = 9001
-        private const val RC_ADD_SCOPES = 9002
     }
 
-    private var googleSignInClient: GoogleSignInClient? = null
     private var credentialManager: CredentialManager? = null
     private var isConfigured = false
-    private var credentialManagerPromise: Promise? = null
-    private var googleSignInPromise: Promise? = null
+    private var currentPromise: Promise? = null
     private var webClientId: String? = null
-    private var defaultScopes: List<String> = emptyList()
     private var nonce: String? = null
+    
+    // Use a single executor for all async operations to avoid memory leaks
+    private val mainExecutor = Executors.newSingleThreadExecutor()
+    
+    // Use WeakReference to prevent memory leaks
+    private val weakReactContext = WeakReference(reactContext)
 
     init {
         reactContext.addActivityEventListener(this)
     }
 
     override fun getName(): String = NAME
-
-    override fun onCatalystInstanceDestroy() {
-        super.onCatalystInstanceDestroy()
-        // Clean up any pending promises to prevent memory leaks
-        credentialManagerPromise?.reject("module_destroyed", "Module was destroyed")
-        googleSignInPromise?.reject("module_destroyed", "Module was destroyed")
-        credentialManagerPromise = null
-        googleSignInPromise = null
-    }
 
     // MARK: - Configuration
 
@@ -82,36 +66,6 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                 // Configuration error - but we can't reject since this is not a Promise-based function
                 return
             }
-
-            defaultScopes = config.getArray("scopes")?.toArrayList()?.map { it.toString() } ?: emptyList()
-            val offlineAccess = config.getBoolean("offlineAccess")
-            val hostedDomain = config.getString("hostedDomain")
-            val forceCodeForRefreshToken = config.getBoolean("forceCodeForRefreshToken")
-
-            // Build Google Sign In Options for OAuth (if needed for scopes or offline)
-            val gsoBuilder = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestEmail()
-                .requestProfile()
-
-            if (offlineAccess) {
-                gsoBuilder.requestServerAuthCode(webClientId!!, forceCodeForRefreshToken)
-            }
-
-            gsoBuilder.requestIdToken(webClientId!!)
-
-            // Add custom scopes
-            defaultScopes.forEach { scope ->
-                gsoBuilder.requestScopes(Scope(scope))
-            }
-
-            hostedDomain?.let { domain ->
-                if (domain.isNotEmpty()) {
-                    gsoBuilder.setHostedDomain(domain)
-                }
-            }
-
-            val googleSignInOptions = gsoBuilder.build()
-            googleSignInClient = GoogleSignIn.getClient(reactContext, googleSignInOptions)
 
             // Initialize Credential Manager for modern sign-in
             credentialManager = CredentialManager.create(reactContext)
@@ -157,94 +111,92 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             return
         }
 
-        // Clear any existing promises to prevent conflicts
-        credentialManagerPromise?.reject("cancelled", "Previous sign in was cancelled by new request")
-        googleSignInPromise?.reject("cancelled", "Previous sign in was cancelled by new request")
-        credentialManagerPromise = null
-        googleSignInPromise = null
+        // Clear any existing promise to prevent conflicts
+        currentPromise?.reject("cancelled", "Previous operation was cancelled by new request")
+        currentPromise = promise
 
         // Use custom nonce if provided, otherwise generate one
         nonce = options?.getString("nonce") ?: generateNonce()
 
-        // Use Credential Manager for modern sign-in if no custom scopes
-        if (defaultScopes.isEmpty()) {
-            val currentWebClientId = webClientId
-            if (currentWebClientId == null) {
-                promise.reject("not_configured", "Google Sign In is not configured. Call configure() first.")
-                return
-            }
-            
-            // Set the promise for Credential Manager flow
-            credentialManagerPromise = promise
-            
-            val googleIdOption = GetGoogleIdOption.Builder()
-                .setServerClientId(currentWebClientId)
-                .setFilterByAuthorizedAccounts(false)
-                .setAutoSelectEnabled(false)
-                .setNonce(nonce)
-                .build()
-            val request = GetCredentialRequest.Builder()
-                .addCredentialOption(googleIdOption)
-                .build()
+        // Use Credential Manager for modern sign-in
+        val currentWebClientId = webClientId
+        if (currentWebClientId == null) {
+            promise.reject("not_configured", "Google Sign In is not configured. Call configure() first.")
+            return
+        }
+        
+        val googleIdOption = GetGoogleIdOption.Builder()
+            .setServerClientId(currentWebClientId)
+            .setFilterByAuthorizedAccounts(false)
+            .setAutoSelectEnabled(false)
+            .setNonce(nonce)
+            .build()
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
 
-            CoroutineScope(Dispatchers.Main).launch {
-                try {
-                    val result = credentialManager?.getCredential(reactContext, request)
-                    val credential = result?.credential
-                    if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                        val idTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                        val response = Arguments.createMap().apply {
-                            val userInfo = Arguments.createMap().apply {
-                                putString("id", idTokenCredential.id ?: "")
-                                putString("name", idTokenCredential.displayName)
-                                putString("email", idTokenCredential.id)
-                                putString("photo", idTokenCredential.profilePictureUri?.toString())
-                                putString("familyName", idTokenCredential.familyName)
-                                putString("givenName", idTokenCredential.givenName)
+        // Use the async version with callback instead of suspend function
+        credentialManager?.getCredentialAsync(
+            request = request,
+            context = reactContext,
+            cancellationSignal = null,
+            executor = mainExecutor,
+            callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
+                override fun onResult(result: GetCredentialResponse) {
+                    try {
+                        val credential = result.credential
+                        if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                            val idTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                            val response = Arguments.createMap().apply {
+                                val userInfo = Arguments.createMap().apply {
+                                    putString("id", idTokenCredential.id ?: "")
+                                    putString("name", idTokenCredential.displayName)
+                                    putString("email", idTokenCredential.id)
+                                    putString("photo", idTokenCredential.profilePictureUri?.toString())
+                                    putString("familyName", idTokenCredential.familyName)
+                                    putString("givenName", idTokenCredential.givenName)
+                                }
+                                val scopesArray = Arguments.createArray()
+                                // Credential Manager does not provide scopes info
+
+                                putMap("user", userInfo)
+                                putArray("scopes", scopesArray)
+                                putString("serverAuthCode", null)
+                                putString("idToken", idTokenCredential.idToken)
                             }
-                            val scopesArray = Arguments.createArray()
-                            // Credential Manager does not provide scopes info
-
-                            putMap("user", userInfo)
-                            putArray("scopes", scopesArray)
-                            putString("serverAuthCode", null)
-                            putString("idToken", idTokenCredential.idToken)
+                            currentPromise?.resolve(response)
+                        } else {
+                            currentPromise?.reject("sign_in_error", "Sign in failed: No credential returned")
                         }
-                        credentialManagerPromise?.resolve(response)
-                    } else {
-                        credentialManagerPromise?.reject("sign_in_error", "Sign in failed: No credential returned")
+                    } catch (e: GoogleIdTokenParsingException) {
+                        currentPromise?.reject("parsing_error", "Failed to parse Google ID token: ${e.message}", e)
+                    } catch (e: Exception) {
+                        currentPromise?.reject("sign_in_error", "Sign in failed: ${e.message}", e)
+                    } finally {
+                        currentPromise = null
                     }
-                } catch (e: GetCredentialException) {
+                }
+
+                override fun onError(e: GetCredentialException) {
                     // Handle different types of credential exceptions
                     when {
                         e.message?.contains("cancel", ignoreCase = true) == true -> {
-                            credentialManagerPromise?.reject("sign_in_cancelled", "User cancelled the sign in")
+                            currentPromise?.reject("sign_in_cancelled", "User cancelled the sign in")
                         }
                         e.message?.contains("no credential", ignoreCase = true) == true -> {
-                            credentialManagerPromise?.reject("no_credential", "No credential available")
+                            currentPromise?.reject("no_credential", "No credential available")
+                        }
+                        e.message?.contains("network", ignoreCase = true) == true -> {
+                            currentPromise?.reject("network_error", "Network error during sign in")
                         }
                         else -> {
-                            credentialManagerPromise?.reject("sign_in_error", "Sign in failed: ${e.message}", e)
+                            currentPromise?.reject("sign_in_error", "Sign in failed: ${e.message}", e)
                         }
                     }
-                } catch (e: GoogleIdTokenParsingException) {
-                    credentialManagerPromise?.reject("parsing_error", "Failed to parse Google ID token: ${e.message}", e)
-                } catch (e: Exception) {
-                    credentialManagerPromise?.reject("sign_in_error", "Sign in failed: ${e.message}", e)
-                } finally {
-                    credentialManagerPromise = null
+                    currentPromise = null
                 }
             }
-        } else {
-            // Fallback to legacy GoogleSignIn for scopes or offlineAccess
-            googleSignInPromise = promise
-            googleSignInClient?.let { client ->
-                val signInIntent = client.signInIntent
-                activity.startActivityForResult(signInIntent, RC_SIGN_IN)
-            } ?: run {
-                promise.reject("client_error", "Google Sign In client not initialized")
-            }
-        }
+        )
     }
 
     override fun signInSilently(promise: Promise) {
@@ -259,96 +211,79 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             return
         }
 
-        // Attempt silent sign-in with Credential Manager if no custom scopes
-        if (defaultScopes.isEmpty()) {
-            val currentWebClientId = webClientId
-            if (currentWebClientId == null) {
-                promise.reject("not_configured", "Google Sign In is not configured. Call configure() first.")
-                return
-            }
-            
-            val googleIdOption = GetGoogleIdOption.Builder()
-                .setServerClientId(currentWebClientId)
-                .setFilterByAuthorizedAccounts(true)
-                .setAutoSelectEnabled(true)
-                .setNonce(nonce)
-                .build()
-            val request = GetCredentialRequest.Builder()
-                .addCredentialOption(googleIdOption)
-                .build()
+        // Clear any existing promise to prevent conflicts
+        currentPromise?.reject("cancelled", "Previous operation was cancelled by new request")
+        currentPromise = promise
 
-            CoroutineScope(Dispatchers.Main).launch {
-                try {
-                    val result = credentialManager?.getCredential(reactContext, request)
-                    val credential = result?.credential
-                    if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                        val idTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                        val response = Arguments.createMap().apply {
-                            val userInfo = Arguments.createMap().apply {
-                                putString("id", idTokenCredential.id ?: "")
-                                putString("name", idTokenCredential.displayName)
-                                putString("email", idTokenCredential.id)
-                                putString("photo", idTokenCredential.profilePictureUri?.toString())
-                                putString("familyName", idTokenCredential.familyName)
-                                putString("givenName", idTokenCredential.givenName)
-                            }
-                            val scopesArray = Arguments.createArray()
-                            putMap("user", userInfo)
-                            putArray("scopes", scopesArray)
-                            putString("serverAuthCode", null)
-                            putString("idToken", idTokenCredential.idToken)
-                        }
-                        promise.resolve(response)
-                    } else {
-                        promise.reject("sign_in_required", "No user is currently signed in")
-                    }
-                } catch (e: GetCredentialException) {
-                    promise.reject("sign_in_required", "No user is currently signed in")
-                } catch (e: Exception) {
-                    promise.reject("sign_in_error", "Silent sign in failed: ${e.message}", e)
-                }
-            }
-        } else {
-            // Fallback to GoogleSignInClient
-            googleSignInClient?.silentSignIn()
-                ?.addOnCompleteListener { task ->
-                    handleSignInResult(task, promise)
-                } ?: run {
-                promise.reject("client_error", "Google Sign In client not initialized")
-            }
-        }
-    }
-
-    override fun addScopes(scopes: ReadableArray, promise: Promise) {
-        if (!isConfigured) {
+        // Attempt silent sign-in with Credential Manager
+        val currentWebClientId = webClientId
+        if (currentWebClientId == null) {
             promise.reject("not_configured", "Google Sign In is not configured. Call configure() first.")
             return
         }
-
-        val activity = currentActivity
-        if (activity == null) {
-            promise.reject("no_activity", "No current activity available")
-            return
-        }
-
-        val account = GoogleSignIn.getLastSignedInAccount(reactContext)
-        if (account == null) {
-            promise.resolve(null)
-            return
-        }
-
-        val scopeList = scopes.toArrayList().map { Scope(it.toString()) }
         
-        // Clear any existing promises to prevent conflicts
-        googleSignInPromise?.reject("cancelled", "Previous add scopes was cancelled by new request")
-        googleSignInPromise = promise
+        val googleIdOption = GetGoogleIdOption.Builder()
+            .setServerClientId(currentWebClientId)
+            .setFilterByAuthorizedAccounts(true)
+            .setAutoSelectEnabled(true)
+            .setNonce(nonce)
+            .build()
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
 
-        GoogleSignIn.requestPermissions(
-            activity,
-            RC_ADD_SCOPES,
-            account,
-            *scopeList.toTypedArray()
+        // Use the async version with callback instead of suspend function
+        credentialManager?.getCredentialAsync(
+            request = request,
+            context = reactContext,
+            cancellationSignal = null,
+            executor = mainExecutor,
+            callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
+                override fun onResult(result: GetCredentialResponse) {
+                    try {
+                        val credential = result.credential
+                        if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                            val idTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                            val response = Arguments.createMap().apply {
+                                val userInfo = Arguments.createMap().apply {
+                                    putString("id", idTokenCredential.id ?: "")
+                                    putString("name", idTokenCredential.displayName)
+                                    putString("email", idTokenCredential.id)
+                                    putString("photo", idTokenCredential.profilePictureUri?.toString())
+                                    putString("familyName", idTokenCredential.familyName)
+                                    putString("givenName", idTokenCredential.givenName)
+                                }
+                                val scopesArray = Arguments.createArray()
+                                putMap("user", userInfo)
+                                putArray("scopes", scopesArray)
+                                putString("serverAuthCode", null)
+                                putString("idToken", idTokenCredential.idToken)
+                            }
+                            currentPromise?.resolve(response)
+                        } else {
+                            currentPromise?.reject("sign_in_required", "No user is currently signed in")
+                        }
+                    } catch (e: GoogleIdTokenParsingException) {
+                        currentPromise?.reject("parsing_error", "Failed to parse Google ID token: ${e.message}", e)
+                    } catch (e: Exception) {
+                        currentPromise?.reject("sign_in_error", "Silent sign in failed: ${e.message}", e)
+                    } finally {
+                        currentPromise = null
+                    }
+                }
+
+                override fun onError(e: GetCredentialException) {
+                    currentPromise?.reject("sign_in_required", "No user is currently signed in")
+                    currentPromise = null
+                }
+            }
         )
+    }
+
+    override fun addScopes(scopes: ReadableArray, promise: Promise) {
+        // Modern Credential Manager doesn't support custom scopes
+        // This is a limitation of the modern approach
+        promise.reject("not_supported", "Custom scopes are not supported in modern Google Sign In. Use basic sign-in only.")
     }
 
     // MARK: - Sign Out Methods
@@ -371,14 +306,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                 }
             )
         }
-        googleSignInClient?.let { client ->
-            client.signOut()
-                .addOnCompleteListener {
-                    promise.resolve(null)
-                }
-        } ?: run {
-            promise.resolve(null)
-        }
+        promise.resolve(null)
     }
 
     override fun revokeAccess(promise: Promise) {
@@ -399,29 +327,12 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                 }
             )
         }
-        googleSignInClient?.let { client ->
-            client.revokeAccess()
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        promise.resolve(null)
-                    } else {
-                        promise.reject("revoke_error", "Failed to revoke access: ${task.exception?.message}")
-                    }
-                }
-        } ?: run {
-            promise.resolve(null)
-        }
+        promise.resolve(null)
     }
 
     // MARK: - User State
 
     override fun isSignedIn(promise: Promise) {
-        // Check GoogleSignInAccount
-        val account = GoogleSignIn.getLastSignedInAccount(reactContext)
-        if (account != null) {
-            promise.resolve(true)
-            return
-        }
         // Check Credential Manager
         val activity = currentActivity
         if (activity == null) {
@@ -442,26 +353,26 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             .addCredentialOption(googleIdOption)
             .build()
 
-        CoroutineScope(Dispatchers.Main).launch {
-            try {
-                credentialManager?.getCredential(reactContext, request)
-                // If no exception, a credential exists
-                promise.resolve(true)
-            } catch (e: GetCredentialException) {
-                promise.resolve(false)
-            } catch (e: Exception) {
-                promise.resolve(false)
+        // Use the async version with callback
+        credentialManager?.getCredentialAsync(
+            request = request,
+            context = reactContext,
+            cancellationSignal = null,
+            executor = mainExecutor,
+            callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
+                override fun onResult(result: GetCredentialResponse) {
+                    // If no exception, a credential exists
+                    promise.resolve(true)
+                }
+
+                override fun onError(e: GetCredentialException) {
+                    promise.resolve(false)
+                }
             }
-        }
+        )
     }
 
     override fun getCurrentUser(promise: Promise) {
-        // Try GoogleSignInAccount
-        val account = GoogleSignIn.getLastSignedInAccount(reactContext)
-        if (account != null) {
-            promise.resolve(convertAccountToMap(account))
-            return
-        }
         // Try Credential Manager
         val activity = currentActivity
         if (activity == null) {
@@ -482,85 +393,114 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             .addCredentialOption(googleIdOption)
             .build()
 
-        CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val result = credentialManager?.getCredential(reactContext, request)
-                val credential = result?.credential
-                if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                    val idTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                    val response = Arguments.createMap().apply {
-                        val userInfo = Arguments.createMap().apply {
-                            putString("id", idTokenCredential.id ?: "")
-                            putString("name", idTokenCredential.displayName)
-                            putString("email", idTokenCredential.id)
-                            putString("photo", idTokenCredential.profilePictureUri?.toString())
-                            putString("familyName", idTokenCredential.familyName)
-                            putString("givenName", idTokenCredential.givenName)
+        // Use the async version with callback
+        credentialManager?.getCredentialAsync(
+            request = request,
+            context = reactContext,
+            cancellationSignal = null,
+            executor = mainExecutor,
+            callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
+                override fun onResult(result: GetCredentialResponse) {
+                    try {
+                        val credential = result.credential
+                        if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                            val idTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                            val response = Arguments.createMap().apply {
+                                val userInfo = Arguments.createMap().apply {
+                                    putString("id", idTokenCredential.id ?: "")
+                                    putString("name", idTokenCredential.displayName)
+                                    putString("email", idTokenCredential.id)
+                                    putString("photo", idTokenCredential.profilePictureUri?.toString())
+                                    putString("familyName", idTokenCredential.familyName)
+                                    putString("givenName", idTokenCredential.givenName)
+                                }
+                                val scopesArray = Arguments.createArray()
+                                putMap("user", userInfo)
+                                putArray("scopes", scopesArray)
+                                putString("serverAuthCode", null)
+                                putString("idToken", idTokenCredential.idToken)
+                            }
+                            promise.resolve(response)
+                        } else {
+                            promise.resolve(null)
                         }
-                        val scopesArray = Arguments.createArray()
-                        putMap("user", userInfo)
-                        putArray("scopes", scopesArray)
-                        putString("serverAuthCode", null)
-                        putString("idToken", idTokenCredential.idToken)
+                    } catch (e: Exception) {
+                        promise.resolve(null)
                     }
-                    promise.resolve(response)
-                } else {
+                }
+
+                override fun onError(e: GetCredentialException) {
                     promise.resolve(null)
                 }
-            } catch (e: Exception) {
-                promise.resolve(null)
             }
-        }
+        )
     }
 
     // MARK: - Utilities
 
     override fun clearCachedAccessToken(accessToken: String, promise: Promise) {
-        // Google Sign-In SDK handles token management automatically
+        // Modern approach doesn't cache access tokens
         promise.resolve(null)
     }
 
     override fun getTokens(promise: Promise) {
-        val account = GoogleSignIn.getLastSignedInAccount(reactContext)
-        if (account == null) {
-            promise.reject("sign_in_required", "No user is currently signed in")
+        // For modern approach, we get tokens from Credential Manager
+        val activity = currentActivity
+        if (activity == null) {
+            promise.reject("no_activity", "No current activity available")
             return
         }
-        val idToken = account.idToken
-        if (idToken == null) {
-            promise.reject("token_error", "No ID token available")
+        val currentWebClientId = webClientId
+        if (currentWebClientId == null) {
+            promise.reject("not_configured", "Google Sign In is not configured")
             return
         }
-        val tokens = Arguments.createMap().apply {
-            putString("idToken", idToken)
-            putString("accessToken", idToken)
-        }
-        promise.resolve(tokens)
+        
+        val googleIdOption = GetGoogleIdOption.Builder()
+            .setServerClientId(currentWebClientId)
+            .setFilterByAuthorizedAccounts(true)
+            .setAutoSelectEnabled(true)
+            .build()
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
+
+        // Use the async version with callback
+        credentialManager?.getCredentialAsync(
+            request = request,
+            context = reactContext,
+            cancellationSignal = null,
+            executor = mainExecutor,
+            callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
+                override fun onResult(result: GetCredentialResponse) {
+                    try {
+                        val credential = result.credential
+                        if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                            val idTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                            val tokens = Arguments.createMap().apply {
+                                putString("idToken", idTokenCredential.idToken)
+                                putString("accessToken", idTokenCredential.idToken) // Note: Credential Manager doesn't provide access tokens
+                            }
+                            promise.resolve(tokens)
+                        } else {
+                            promise.reject("sign_in_required", "No user is currently signed in")
+                        }
+                    } catch (e: Exception) {
+                        promise.reject("sign_in_required", "No user is currently signed in")
+                    }
+                }
+
+                override fun onError(e: GetCredentialException) {
+                    promise.reject("sign_in_required", "No user is currently signed in")
+                }
+            }
+        )
     }
 
     // MARK: - Activity Event Listener
 
     override fun onActivityResult(activity: Activity?, requestCode: Int, resultCode: Int, intent: Intent?) {
-        when (requestCode) {
-            RC_SIGN_IN -> {
-                val task = GoogleSignIn.getSignedInAccountFromIntent(intent)
-                handleSignInResult(task, googleSignInPromise)
-                googleSignInPromise = null
-            }
-            RC_ADD_SCOPES -> {
-                if (resultCode == Activity.RESULT_OK) {
-                    val account = GoogleSignIn.getLastSignedInAccount(reactContext)
-                    if (account != null) {
-                        googleSignInPromise?.resolve(convertAccountToMap(account))
-                    } else {
-                        googleSignInPromise?.reject("add_scopes_error", "Failed to add scopes: No account found")
-                    }
-                } else {
-                    googleSignInPromise?.reject("add_scopes_cancelled", "User cancelled adding scopes")
-                }
-                googleSignInPromise = null
-            }
-        }
+        // Not needed for modern Credential Manager approach
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -568,71 +508,6 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
     }
 
     // MARK: - Helper Methods
-
-    private fun handleSignInResult(task: Task<GoogleSignInAccount>, promise: Promise?) {
-        try {
-            val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
-            if (account != null) {
-                promise?.resolve(convertAccountToMap(account))
-            } else {
-                promise?.reject("sign_in_error", "Sign in failed: No account data received")
-            }
-        } catch (e: com.google.android.gms.common.api.ApiException) {
-            when (e.statusCode) {
-                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.SIGN_IN_CANCELLED -> {
-                    promise?.reject("sign_in_cancelled", "User cancelled the sign in")
-                }
-                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.SIGN_IN_CURRENTLY_IN_PROGRESS -> {
-                    promise?.reject("in_progress", "Sign in is already in progress")
-                }
-                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.SIGN_IN_FAILED -> {
-                    promise?.reject("sign_in_failed", "Sign in failed")
-                }
-                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.SIGN_IN_REQUIRED -> {
-                    promise?.reject("sign_in_required", "Sign in required")
-                }
-                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.INVALID_ACCOUNT -> {
-                    promise?.reject("invalid_account", "Invalid account")
-                }
-                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.NETWORK_ERROR -> {
-                    promise?.reject("network_error", "Network error")
-                }
-                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.INTERNAL_ERROR -> {
-                    promise?.reject("internal_error", "Internal error")
-                }
-                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.DEVELOPER_ERROR -> {
-                    promise?.reject("developer_error", "Developer error")
-                }
-                else -> {
-                    promise?.reject("sign_in_error", "Sign in failed with code: ${e.statusCode}")
-                }
-            }
-        } catch (e: Exception) {
-            promise?.reject("sign_in_error", "Sign in failed: ${e.message}", e)
-        }
-    }
-
-    private fun convertAccountToMap(account: GoogleSignInAccount): WritableMap {
-        val userInfo = Arguments.createMap().apply {
-            putString("id", account.id ?: "")
-            putString("name", account.displayName)
-            putString("email", account.email ?: "")
-            putString("photo", account.photoUrl?.toString())
-            putString("familyName", account.familyName)
-            putString("givenName", account.givenName)
-        }
-        val scopes = Arguments.createArray().apply {
-            account.grantedScopes?.forEach { scope ->
-                pushString(scope.scopeUri)
-            }
-        }
-        return Arguments.createMap().apply {
-            putMap("user", userInfo)
-            putArray("scopes", scopes)
-            putString("serverAuthCode", account.serverAuthCode)
-            putString("idToken", account.idToken)
-        }
-    }
 
     private fun generateNonce(): String {
         val random = SecureRandom()
