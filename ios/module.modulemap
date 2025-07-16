@@ -1,0 +1,5 @@
+module RnGoogleSignin {
+  umbrella header "RnGoogleSignin.h"
+  export *
+  module * { export * }
+} 

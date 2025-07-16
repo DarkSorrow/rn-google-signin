@@ -4,13 +4,25 @@ import android.app.Activity
 import android.content.Intent
 import com.facebook.react.bridge.*
 import com.facebook.react.module.annotations.ReactModule
+import com.facebook.react.bridge.UiThreadUtil
+import com.google.android.gms.auth.GoogleAuthException
+import com.google.android.gms.auth.GoogleAuthUtil
+import com.google.android.gms.auth.UserRecoverableAuthException
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
+import com.google.android.gms.common.api.Scope
 import com.google.android.gms.tasks.Task
+import java.io.IOException
+import java.lang.ref.WeakReference
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 @ReactModule(name = RnGoogleSigninModule.NAME)
 class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
@@ -19,13 +31,25 @@ class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
     companion object {
         const val NAME = "RnGoogleSignin"
         private const val RC_SIGN_IN = 9001
-        private const val RC_ADD_SCOPES = 9002
+        private const val REQUEST_CODE_ADD_SCOPES = 53295
+        private const val REQUEST_CODE_RECOVER_AUTH = 53294
+        private const val PLAY_SERVICES_NOT_AVAILABLE = "PLAY_SERVICES_NOT_AVAILABLE"
+        private const val SHOULD_RECOVER = "SHOULD_RECOVER"
+        private const val ASYNC_OP_IN_PROGRESS = "ASYNC_OP_IN_PROGRESS"
     }
 
     private var googleSignInClient: GoogleSignInClient? = null
     private var isConfigured = false
     private var pendingPromise: Promise? = null
     private var currentRequestCode: Int = 0
+    private var pendingAuthRecovery: PendingAuthRecovery? = null
+
+    private val signInOrAddScopesPromiseWrapper = PromiseWrapper(NAME)
+    private val silentSignInPromiseWrapper = PromiseWrapper(NAME)
+    private val tokenRetrievalPromiseWrapper = PromiseWrapper(NAME)
+    private val tokenClearingPromiseWrapper = PromiseWrapper(NAME)
+
+    private val executor: ExecutorService = Executors.newSingleThreadExecutor()
 
     init {
         reactContext.addActivityEventListener(this)
@@ -35,64 +59,76 @@ class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
     // MARK: - Configuration
 
-    override fun configure(config: ReadableMap, promise: Promise) {
-        try {
-            val webClientId = when {
-                config.hasKey("webClientId") -> config.getString("webClientId")
-                config.hasKey("androidClientId") -> config.getString("androidClientId")
-                else -> {
-                    promise.reject("configuration_error", "webClientId or androidClientId is required")
-                    return
-                }
+    override fun configure(config: ReadableMap) {
+        val webClientId = when {
+            config.hasKey("webClientId") -> config.getString("webClientId")
+            config.hasKey("androidClientId") -> config.getString("androidClientId")
+            else -> {
+                // Use empty string as fallback - this will cause configuration to fail gracefully
+                ""
             }
-
-            if (webClientId.isNullOrEmpty()) {
-                promise.reject("configuration_error", "Client ID cannot be empty")
-                return
-            }
-
-            val scopes = config.getArray("scopes")?.toArrayList()?.map { it.toString() } ?: emptyList()
-            val offlineAccess = config.getBoolean("offlineAccess")
-            val hostedDomain = config.getString("hostedDomain")
-            val forceCodeForRefreshToken = config.getBoolean("forceCodeForRefreshToken")
-
-            // Build Google Sign In Options
-            val gsoBuilder = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestEmail()
-                .requestProfile()
-
-            if (offlineAccess) {
-                gsoBuilder.requestServerAuthCode(webClientId, forceCodeForRefreshToken)
-            }
-
-            gsoBuilder.requestIdToken(webClientId)
-
-            // Add custom scopes
-            scopes.forEach { scope ->
-                gsoBuilder.requestScopes(com.google.android.gms.common.api.Scope(scope))
-            }
-
-            hostedDomain?.let { domain ->
-                gsoBuilder.setHostedDomain(domain)
-            }
-
-            val googleSignInOptions = gsoBuilder.build()
-            googleSignInClient = GoogleSignIn.getClient(reactContext, googleSignInOptions)
-
-            isConfigured = true
-            promise.resolve(null)
-
-        } catch (e: Exception) {
-            promise.reject("configuration_error", "Failed to configure Google Sign In: ${e.message}", e)
         }
+
+        if (webClientId.isNullOrEmpty()) {
+            // Configuration failed but we don't throw - just mark as not configured
+            isConfigured = false
+            return
+        }
+
+        val scopes = config.getArray("scopes")?.toArrayList()?.map { it.toString() } ?: emptyList()
+        val offlineAccess = config.getBoolean("offlineAccess")
+        val hostedDomain = config.getString("hostedDomain")
+        val forceCodeForRefreshToken = config.getBoolean("forceCodeForRefreshToken")
+        val accountName = config.getString("accountName")
+
+        // Build Google Sign In Options
+        val gsoBuilder = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .requestProfile()
+
+        if (offlineAccess) {
+            gsoBuilder.requestServerAuthCode(webClientId, forceCodeForRefreshToken)
+        }
+
+        gsoBuilder.requestIdToken(webClientId)
+
+        // Add custom scopes
+        scopes.forEach { scope ->
+            gsoBuilder.requestScopes(Scope(scope))
+        }
+
+        hostedDomain?.let { domain ->
+            gsoBuilder.setHostedDomain(domain)
+        }
+
+        val googleSignInOptions = gsoBuilder.build()
+        googleSignInClient = GoogleSignIn.getClient(reactContext, googleSignInOptions)
+
+        isConfigured = true
     }
 
     // MARK: - Sign In Methods
 
     override fun hasPlayServices(options: ReadableMap?, promise: Promise) {
+        val activity = getCurrentActivity()
+        if (activity == null) {
+            promise.reject(NAME, "activity is null")
+            return
+        }
+
         val googleApiAvailability = GoogleApiAvailability.getInstance()
-        val result = googleApiAvailability.isGooglePlayServicesAvailable(reactContext)
-        promise.resolve(result == ConnectionResult.SUCCESS)
+        val result = googleApiAvailability.isGooglePlayServicesAvailable(activity)
+
+        if (result != ConnectionResult.SUCCESS) {
+            val showPlayServicesUpdateDialog = options?.getBoolean("showPlayServicesUpdateDialog") ?: false
+            if (showPlayServicesUpdateDialog && googleApiAvailability.isUserResolvableError(result)) {
+                val requestCode = 2404
+                googleApiAvailability.getErrorDialog(activity, result, requestCode).show()
+            }
+            promise.reject(PLAY_SERVICES_NOT_AVAILABLE, "Play services not available")
+        } else {
+            promise.resolve(true)
+        }
     }
 
     override fun signIn(options: ReadableMap?, promise: Promise) {
@@ -103,18 +139,18 @@ class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
         val activity = getCurrentActivity()
         if (activity == null) {
-            promise.reject("no_activity", "No current activity available")
+            promise.reject(NAME, "activity is null")
             return
         }
 
-        pendingPromise = promise
-        currentRequestCode = RC_SIGN_IN
-
-        googleSignInClient?.let { client ->
-            val signInIntent = client.signInIntent
-            activity.startActivityForResult(signInIntent, RC_SIGN_IN)
-        } ?: run {
-            promise.reject("client_error", "Google Sign In client not initialized")
+        signInOrAddScopesPromiseWrapper.setPromiseWithInProgressCheck(promise, "signIn")
+        UiThreadUtil.runOnUiThread {
+            googleSignInClient?.let { client ->
+                val signInIntent = client.signInIntent
+                activity.startActivityForResult(signInIntent, RC_SIGN_IN)
+            } ?: run {
+                promise.reject("client_error", "Google Sign In client not initialized")
+            }
         }
     }
 
@@ -124,13 +160,20 @@ class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             return
         }
 
-        googleSignInClient?.let { client ->
-            client.silentSignIn()
-                .addOnCompleteListener { task ->
-                    handleSignInResult(task, promise)
+        silentSignInPromiseWrapper.setPromiseWithInProgressCheck(promise, "signInSilently")
+        UiThreadUtil.runOnUiThread {
+            googleSignInClient?.let { client ->
+                val result = client.silentSignIn()
+                if (result.isSuccessful) {
+                    handleSignInTaskResult(result, silentSignInPromiseWrapper)
+                } else {
+                    result.addOnCompleteListener { task ->
+                        handleSignInTaskResult(task, silentSignInPromiseWrapper)
+                    }
                 }
-        } ?: run {
-            promise.reject("client_error", "Google Sign In client not initialized")
+            } ?: run {
+                promise.reject("client_error", "Google Sign In client not initialized")
+            }
         }
     }
 
@@ -142,24 +185,22 @@ class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
         val activity = getCurrentActivity()
         if (activity == null) {
-            promise.reject("no_activity", "No current activity available")
+            promise.reject(NAME, "activity is null")
             return
         }
 
         val account = GoogleSignIn.getLastSignedInAccount(reactContext)
         if (account == null) {
-            promise.reject("sign_in_required", "No user is currently signed in")
+            promise.resolve(false)
             return
         }
 
-        val scopeList = scopes.toArrayList().map { com.google.android.gms.common.api.Scope(it.toString()) }
-        
-        pendingPromise = promise
-        currentRequestCode = RC_ADD_SCOPES
+        signInOrAddScopesPromiseWrapper.setPromiseWithInProgressCheck(promise, "addScopes")
 
+        val scopeList = scopes.toArrayList().map { Scope(it.toString()) }
         GoogleSignIn.requestPermissions(
             activity,
-            RC_ADD_SCOPES,
+            REQUEST_CODE_ADD_SCOPES,
             account,
             *scopeList.toTypedArray()
         )
@@ -168,28 +209,34 @@ class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
     // MARK: - Sign Out Methods
 
     override fun signOut(promise: Promise) {
+        if (!isConfigured) {
+            promise.reject("not_configured", "Google Sign In is not configured. Call configure() first.")
+            return
+        }
+
         googleSignInClient?.let { client ->
             client.signOut()
-                .addOnCompleteListener {
-                    promise.resolve(null)
+                .addOnCompleteListener { task ->
+                    handleSignOutOrRevokeAccessTask(task, promise)
                 }
         } ?: run {
-            promise.resolve(null)
+            promise.reject(NAME, "apiClient is null - call configure() first")
         }
     }
 
     override fun revokeAccess(promise: Promise) {
+        if (!isConfigured) {
+            promise.reject("not_configured", "Google Sign In is not configured. Call configure() first.")
+            return
+        }
+
         googleSignInClient?.let { client ->
             client.revokeAccess()
                 .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        promise.resolve(null)
-                    } else {
-                        promise.reject("revoke_error", "Failed to revoke access: ${task.exception?.message}")
-                    }
+                    handleSignOutOrRevokeAccessTask(task, promise)
                 }
         } ?: run {
-            promise.resolve(null)
+            promise.reject(NAME, "apiClient is null - call configure() first")
         }
     }
 
@@ -212,31 +259,26 @@ class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
     // MARK: - Utilities
 
     override fun clearCachedAccessToken(accessToken: String, promise: Promise) {
-        // Android doesn't require explicit token clearing as it's handled by the Google APIs
-        promise.resolve(null)
+        tokenClearingPromiseWrapper.setPromiseWithInProgressCheck(promise, "clearCachedAccessToken")
+        executor.execute {
+            try {
+                GoogleAuthUtil.clearToken(reactContext, accessToken)
+                tokenClearingPromiseWrapper.resolve(null)
+            } catch (e: Exception) {
+                tokenClearingPromiseWrapper.reject(e)
+            }
+        }
     }
 
     override fun getTokens(promise: Promise) {
         val account = GoogleSignIn.getLastSignedInAccount(reactContext)
         if (account == null) {
-            promise.reject("sign_in_required", "No user is currently signed in")
+            promise.reject("getTokens", "getTokens requires a user to be signed in")
             return
         }
 
-        // Get fresh token
-        GoogleSignIn.getClient(reactContext, GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .getAccessToken(account)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    val tokens = Arguments.createMap().apply {
-                        putString("accessToken", task.result?.token)
-                        putString("idToken", account.idToken)
-                    }
-                    promise.resolve(tokens)
-                } else {
-                    promise.reject("token_error", "Failed to get tokens: ${task.exception?.message}")
-                }
-            }
+        tokenRetrievalPromiseWrapper.setPromiseWithInProgressCheck(promise, "getTokens")
+        startTokenRetrievalTaskWithRecovery(account)
     }
 
     // MARK: - Activity Event Listener
@@ -245,21 +287,21 @@ class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
         when (requestCode) {
             RC_SIGN_IN -> {
                 val task = GoogleSignIn.getSignedInAccountFromIntent(intent)
-                handleSignInResult(task, pendingPromise)
-                pendingPromise = null
+                handleSignInTaskResult(task, signInOrAddScopesPromiseWrapper)
             }
-            RC_ADD_SCOPES -> {
+            REQUEST_CODE_ADD_SCOPES -> {
                 if (resultCode == Activity.RESULT_OK) {
-                    val account = GoogleSignIn.getLastSignedInAccount(reactContext)
-                    if (account != null) {
-                        pendingPromise?.resolve(convertAccountToMap(account))
-                    } else {
-                        pendingPromise?.reject("add_scopes_error", "Failed to add scopes: No account found")
-                    }
+                    signInOrAddScopesPromiseWrapper.resolve(true)
                 } else {
-                    pendingPromise?.reject("add_scopes_cancelled", "User cancelled adding scopes")
+                    signInOrAddScopesPromiseWrapper.reject("Failed to add scopes.")
                 }
-                pendingPromise = null
+            }
+            REQUEST_CODE_RECOVER_AUTH -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    rerunFailedAuthTokenTask()
+                } else {
+                    tokenRetrievalPromiseWrapper.reject("Failed authentication recovery attempt, probably user-rejected.")
+                }
             }
         }
     }
@@ -270,31 +312,38 @@ class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
     // MARK: - Helper Methods
 
-    private fun handleSignInResult(task: Task<GoogleSignInAccount>, promise: Promise?) {
+    private fun handleSignInTaskResult(task: Task<GoogleSignInAccount>, promiseWrapper: PromiseWrapper) {
         try {
-            val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
-            if (account != null) {
-                promise?.resolve(convertAccountToMap(account))
+            val account = task.getResult(ApiException::class.java)
+            if (account == null) {
+                promiseWrapper.reject("GoogleSignInAccount instance was null")
             } else {
-                promise?.reject("sign_in_error", "Sign in failed: No account data received")
+                val userParams = convertAccountToMap(account)
+                promiseWrapper.resolve(userParams)
             }
-        } catch (e: com.google.android.gms.common.api.ApiException) {
-            when (e.statusCode) {
-                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.SIGN_IN_CANCELLED -> {
-                    promise?.reject("sign_in_cancelled", "User cancelled the sign in")
-                }
-                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.SIGN_IN_CURRENTLY_IN_PROGRESS -> {
-                    promise?.reject("in_progress", "Sign in is already in progress")
-                }
-                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.SIGN_IN_FAILED -> {
-                    promise?.reject("sign_in_failed", "Sign in failed")
-                }
-                else -> {
-                    promise?.reject("sign_in_error", "Sign in failed with code: ${e.statusCode}")
-                }
+        } catch (e: ApiException) {
+            if (e.statusCode == CommonStatusCodes.DEVELOPER_ERROR) {
+                promiseWrapper.reject(
+                    CommonStatusCodes.DEVELOPER_ERROR.toString(),
+                    "DEVELOPER_ERROR: Follow troubleshooting instructions at https://react-native-google-signin.github.io/docs/troubleshooting"
+                )
+            } else {
+                promiseWrapper.reject(e)
             }
-        } catch (e: Exception) {
-            promise?.reject("sign_in_error", "Sign in failed: ${e.message}", e)
+        }
+    }
+
+    private fun handleSignOutOrRevokeAccessTask(task: Task<Void>, promise: Promise) {
+        if (task.isSuccessful) {
+            promise.resolve(null)
+        } else {
+            val exception = task.exception
+            if (exception is ApiException) {
+                val errorDescription = GoogleSignInStatusCodes.getStatusCodeString(exception.statusCode)
+                promise.reject(exception.statusCode.toString(), errorDescription)
+            } else {
+                promise.reject("unknown_error", exception?.message ?: "Unknown error")
+            }
         }
     }
 
@@ -319,6 +368,124 @@ class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             putArray("scopes", scopes)
             putString("serverAuthCode", account.serverAuthCode)
             putString("idToken", account.idToken)
+        }
+    }
+
+    private fun startTokenRetrievalTaskWithRecovery(account: GoogleSignInAccount) {
+        val userParams = convertAccountToMap(account)
+        val recoveryParams = Arguments.createMap().apply {
+            putBoolean(SHOULD_RECOVER, true)
+        }
+        AccessTokenRetrievalTask(this).execute(userParams, recoveryParams)
+    }
+
+    private fun rerunFailedAuthTokenTask() {
+        val userProperties = pendingAuthRecovery?.getUserProperties()
+        if (userProperties != null) {
+            AccessTokenRetrievalTask(this).execute(userProperties, null)
+        } else {
+            tokenRetrievalPromiseWrapper.reject("rerunFailedAuthTokenTask: recovery failed")
+        }
+    }
+
+    // MARK: - Inner Classes
+
+    private class AccessTokenRetrievalTask(private val module: RnGoogleSigninModule) {
+        fun execute(vararg params: WritableMap) {
+            module.executor.execute {
+                val userProperties = params[0]
+                try {
+                    insertAccessTokenIntoUserProperties(userProperties)
+                    module.tokenRetrievalPromiseWrapper.resolve(userProperties)
+                } catch (e: Exception) {
+                    val recoverySettings = if (params.size >= 2) params[1] else null
+                    handleException(e, userProperties, recoverySettings)
+                }
+            }
+        }
+
+        private fun insertAccessTokenIntoUserProperties(userProperties: WritableMap) {
+            val mail = userProperties.getMap("user").getString("email")
+            val scopes = userProperties.getArray("scopes")
+            val scopeString = scopes.toArrayList().joinToString(" ")
+            
+            val token = GoogleAuthUtil.getToken(
+                module.reactContext,
+                android.accounts.Account(mail, "com.google"),
+                scopeString
+            )
+            
+            userProperties.putString("accessToken", token)
+        }
+
+        private fun handleException(cause: Exception, userProperties: WritableMap, settings: WritableMap?) {
+            val isRecoverable = cause is UserRecoverableAuthException
+            if (isRecoverable) {
+                val shouldRecover = settings?.getBoolean(SHOULD_RECOVER) ?: false
+                if (shouldRecover) {
+                    attemptRecovery(cause, userProperties)
+                } else {
+                    module.tokenRetrievalPromiseWrapper.reject(cause)
+                }
+            } else {
+                module.tokenRetrievalPromiseWrapper.reject(cause)
+            }
+        }
+
+        private fun attemptRecovery(e: Exception, userProperties: WritableMap) {
+            val activity = module.getCurrentActivity()
+            if (activity == null) {
+                module.pendingAuthRecovery = null
+                module.tokenRetrievalPromiseWrapper.reject(
+                    "Cannot attempt recovery auth because app is not in foreground. ${e.localizedMessage}"
+                )
+            } else {
+                module.pendingAuthRecovery = PendingAuthRecovery(userProperties)
+                val recoveryIntent = (e as UserRecoverableAuthException).intent
+                activity.startActivityForResult(recoveryIntent, REQUEST_CODE_RECOVER_AUTH)
+            }
+        }
+    }
+
+    private class PendingAuthRecovery(private val userProperties: WritableMap) {
+        fun getUserProperties(): WritableMap = userProperties
+    }
+
+    private class PromiseWrapper(private val moduleName: String) {
+        private var promise: Promise? = null
+        private var operationName: String? = null
+
+        fun setPromiseWithInProgressCheck(promise: Promise, operationName: String) {
+            if (this.promise != null) {
+                promise.reject(moduleName, "$operationName: $ASYNC_OP_IN_PROGRESS")
+                return
+            }
+            this.promise = promise
+            this.operationName = operationName
+        }
+
+        fun resolve(result: Any?) {
+            promise?.resolve(result)
+            promise = null
+            operationName = null
+        }
+
+        fun reject(error: String) {
+            promise?.reject(moduleName, error)
+            promise = null
+            operationName = null
+        }
+
+        fun reject(throwable: Throwable) {
+            promise?.reject(moduleName, throwable.message ?: "Unknown error", throwable)
+            promise = null
+            operationName = null
+        }
+
+        fun reject(code: String, message: String) {
+            promise?.reject(code, message)
+            promise = null
+            operationName = null
         }
     }
 }
