@@ -131,40 +131,38 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
         }
     }
     
-    func addScopes(scopes: [String]) -> Promise {
-        return Promise { resolve, reject in
-            guard isConfigured else {
-                reject("not_configured", "Google Sign In is not configured. Call configure() first.", nil)
+    func addScopes(scopes: [String], resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        guard isConfigured else {
+            reject("not_configured", "Google Sign In is not configured. Call configure() first.", nil)
+            return
+        }
+        
+        guard let currentUser = GIDSignIn.sharedInstance.currentUser else {
+            reject("sign_in_required", "No user is currently signed in", nil)
+            return
+        }
+        
+        DispatchQueue.main.async {
+            guard let presentingViewController = self.getCurrentViewController() else {
+                reject("no_view_controller", "No presenting view controller available", nil)
                 return
             }
             
-            guard let currentUser = GIDSignIn.sharedInstance.currentUser else {
-                reject("sign_in_required", "No user is currently signed in", nil)
-                return
-            }
-            
-            DispatchQueue.main.async {
-                guard let presentingViewController = self.getCurrentViewController() else {
-                    reject("no_view_controller", "No presenting view controller available", nil)
+            currentUser.addScopes(scopes, presenting: presentingViewController) { [weak self] user, error in
+                if let error = error {
+                    reject("add_scopes_error", "Failed to add scopes: \(error.localizedDescription)", error)
                     return
                 }
                 
-                currentUser.addScopes(scopes, presenting: presentingViewController) { [weak self] user, error in
-                    if let error = error {
-                        reject("add_scopes_error", "Failed to add scopes: \(error.localizedDescription)", error)
-                        return
-                    }
-                    
-                    guard let user = user else {
-                        reject("add_scopes_error", "Failed to add scopes: No user returned", nil)
-                        return
-                    }
-                    
-                    if let userDict = self?.convertUserToDict(user: user) {
-                        resolve(userDict)
-                    } else {
-                        reject("conversion_error", "Failed to convert user data", nil)
-                    }
+                guard let user = user else {
+                    reject("add_scopes_error", "Failed to add scopes: No user returned", nil)
+                    return
+                }
+                
+                if let userDict = self?.convertUserToDict(user: user) {
+                    resolve(userDict)
+                } else {
+                    reject("conversion_error", "Failed to convert user data", nil)
                 }
             }
         }
@@ -172,85 +170,73 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
     
     // MARK: - Sign Out Methods
     
-    func signOut() -> Promise {
-        return Promise { resolve, reject in
-            GIDSignIn.sharedInstance.signOut()
-            resolve(nil)
-        }
+    func signOut(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        GIDSignIn.sharedInstance.signOut()
+        resolve(nil)
     }
     
-    func revokeAccess() -> Promise {
-        return Promise { resolve, reject in
-            GIDSignIn.sharedInstance.disconnect { error in
-                if let error = error {
-                    reject("revoke_error", "Failed to revoke access: \(error.localizedDescription)", error)
-                    return
-                }
-                resolve(nil)
+    func revokeAccess(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        GIDSignIn.sharedInstance.disconnect { error in
+            if let error = error {
+                reject("revoke_error", "Failed to revoke access: \(error.localizedDescription)", error)
+                return
             }
+            resolve(nil)
         }
     }
     
     // MARK: - User State
     
-    func isSignedIn() -> Promise {
-        return Promise { resolve, reject in
-            let signedIn = GIDSignIn.sharedInstance.currentUser != nil
-            resolve(signedIn)
-        }
+    func isSignedIn(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        let signedIn = GIDSignIn.sharedInstance.currentUser != nil
+        resolve(signedIn)
     }
     
-    func getCurrentUser() -> Promise {
-        return Promise { resolve, reject in
-            guard let currentUser = GIDSignIn.sharedInstance.currentUser else {
-                resolve(NSNull())
-                return
-            }
-            
-            if let userDict = convertUserToDict(user: currentUser) {
-                resolve(userDict)
-            } else {
-                reject("conversion_error", "Failed to convert user data", nil)
-            }
+    func getCurrentUser(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        guard let currentUser = GIDSignIn.sharedInstance.currentUser else {
+            resolve(NSNull())
+            return
+        }
+        
+        if let userDict = convertUserToDict(user: currentUser) {
+            resolve(userDict)
+        } else {
+            reject("conversion_error", "Failed to convert user data", nil)
         }
     }
     
     // MARK: - Utilities
     
-    func clearCachedAccessToken(accessToken: String) -> Promise {
-        return Promise { resolve, reject in
-            // iOS Google Sign In SDK doesn't have a direct equivalent to clearing cached tokens
-            // The tokens are automatically managed and refreshed by the SDK
-            resolve(nil)
-        }
+    func clearCachedAccessToken(accessToken: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        // iOS Google Sign In SDK doesn't have a direct equivalent to clearing cached tokens
+        // The tokens are automatically managed and refreshed by the SDK
+        resolve(nil)
     }
     
-    func getTokens() -> Promise {
-        return Promise { resolve, reject in
-            guard let currentUser = GIDSignIn.sharedInstance.currentUser else {
-                reject("sign_in_required", "No user is currently signed in", nil)
+    func getTokens(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        guard let currentUser = GIDSignIn.sharedInstance.currentUser else {
+            reject("sign_in_required", "No user is currently signed in", nil)
+            return
+        }
+        
+        currentUser.refreshTokensIfNeeded { user, error in
+            if let error = error {
+                reject("token_error", "Failed to get tokens: \(error.localizedDescription)", error)
                 return
             }
             
-            currentUser.refreshTokensIfNeeded { user, error in
-                if let error = error {
-                    reject("token_error", "Failed to get tokens: \(error.localizedDescription)", error)
-                    return
-                }
-                
-                guard let user = user,
-                      let accessToken = user.accessToken.tokenString else {
-                    reject("token_error", "Failed to get access token", nil)
-                    return
-                }
-                
-                let tokens: [String: Any] = [
-                    "accessToken": accessToken,
-                    "idToken": user.idToken?.tokenString ?? NSNull()
-                ]
-                
-                resolve(tokens)
+            guard let user = user,
+                  let accessToken = user.accessToken.tokenString else {
+                reject("token_error", "Failed to get access token", nil)
+                return
             }
+            
+            let tokens: [String: Any] = [
+                "accessToken": accessToken,
+                "idToken": user.idToken?.tokenString ?? NSNull()
+            ]
+            
+            resolve(tokens)
         }
     }
     
@@ -300,21 +286,4 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
     }
 }
 
-// MARK: - Promise Wrapper
-class Promise {
-    private let resolve: RCTPromiseResolveBlock
-    private let reject: RCTPromiseRejectBlock
-    
-    init(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-        self.resolve = resolve
-        self.reject = reject
-    }
-    
-    func resolve(_ value: Any?) {
-        resolve(value)
-    }
-    
-    func reject(_ code: String, _ message: String, _ error: Error?) {
-        reject(code, message, error)
-    }
-} 
+ 
