@@ -50,7 +50,7 @@ jobs:
             exit 1
           fi
           
-          if [ ! -f "lib/typescript/expo-plugin/index.js" ]; then
+          if [ ! -f "expo-plugin/build/withGoogleSignIn.js" ]; then
             echo "❌ Expo plugin build failed!"
             exit 1
           fi
