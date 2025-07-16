@@ -123,7 +123,7 @@ class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             val showPlayServicesUpdateDialog = options?.getBoolean("showPlayServicesUpdateDialog") ?: false
             if (showPlayServicesUpdateDialog && googleApiAvailability.isUserResolvableError(result)) {
                 val requestCode = 2404
-                googleApiAvailability.getErrorDialog(activity, result, requestCode).show()
+                googleApiAvailability.getErrorDialog(activity, result, requestCode)?.show()
             }
             promise.reject(PLAY_SERVICES_NOT_AVAILABLE, "Play services not available")
         } else {
@@ -382,7 +382,8 @@ class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
     private fun rerunFailedAuthTokenTask() {
         val userProperties = pendingAuthRecovery?.getUserProperties()
         if (userProperties != null) {
-            AccessTokenRetrievalTask(this).execute(userProperties, null)
+            val emptyRecoveryParams = Arguments.createMap()
+            AccessTokenRetrievalTask(this).execute(userProperties, emptyRecoveryParams)
         } else {
             tokenRetrievalPromiseWrapper.reject("rerunFailedAuthTokenTask: recovery failed")
         }
@@ -405,17 +406,21 @@ class RnGoogleSigninModule(private val reactContext: ReactApplicationContext) :
         }
 
         private fun insertAccessTokenIntoUserProperties(userProperties: WritableMap) {
-            val mail = userProperties.getMap("user").getString("email")
+            val mail = userProperties.getMap("user")?.getString("email") ?: ""
             val scopes = userProperties.getArray("scopes")
-            val scopeString = scopes.toArrayList().joinToString(" ")
+            val scopeString = scopes?.toArrayList()?.joinToString(" ") ?: ""
             
-            val token = GoogleAuthUtil.getToken(
-                module.reactContext,
-                android.accounts.Account(mail, "com.google"),
-                scopeString
-            )
-            
-            userProperties.putString("accessToken", token)
+            if (mail.isNotEmpty()) {
+                val token = GoogleAuthUtil.getToken(
+                    module.reactContext,
+                    android.accounts.Account(mail, "com.google"),
+                    scopeString
+                )
+                
+                userProperties.putString("accessToken", token)
+            } else {
+                module.tokenRetrievalPromiseWrapper.reject("Email is required for token retrieval")
+            }
         }
 
         private fun handleException(cause: Exception, userProperties: WritableMap, settings: WritableMap?) {

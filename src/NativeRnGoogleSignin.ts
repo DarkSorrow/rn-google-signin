@@ -51,7 +51,10 @@ export interface SignInSilentlyResponse {
 }
 
 export interface GetTokensResponse {
-  idToken: string;
+  user: User;
+  scopes: string[];
+  serverAuthCode?: string;
+  idToken?: string;
   accessToken: string;
 }
 

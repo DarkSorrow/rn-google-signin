@@ -61,72 +61,70 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
     }
     
     func signIn(options: [String: Any]?, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-            guard isConfigured else {
-                reject("not_configured", "Google Sign In is not configured. Call configure() first.", nil)
+        guard isConfigured else {
+            reject("not_configured", "Google Sign In is not configured. Call configure() first.", nil)
+            return
+        }
+        
+        DispatchQueue.main.async {
+            guard let presentingViewController = self.getCurrentViewController() else {
+                reject("no_view_controller", "No presenting view controller available", nil)
                 return
             }
             
-            DispatchQueue.main.async {
-                guard let presentingViewController = self.getCurrentViewController() else {
-                    reject("no_view_controller", "No presenting view controller available", nil)
+            // Get scopes from options or use default scopes
+            let scopes = options?["scopes"] as? [String] ?? self.defaultScopes
+            
+            GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController, hint: nil, additionalScopes: scopes.isEmpty ? nil : scopes) { [weak self] result, error in
+                if let error = error {
+                    let nsError = error as NSError
+                    let code = nsError.code
+                    
+                    switch code {
+                    case GIDSignInError.canceled.rawValue:
+                        reject("sign_in_cancelled", "User cancelled the sign in", error)
+                    case GIDSignInError.EMM.rawValue:
+                        reject("emm_error", "Enterprise Mobility Management error", error)
+                    case GIDSignInError.unknown.rawValue:
+                        reject("unknown_error", "Unknown error occurred", error)
+                    default:
+                        reject("sign_in_error", "Sign in failed: \(error.localizedDescription)", error)
+                    }
                     return
                 }
                 
-                // Get scopes from options or use default scopes
-                let scopes = options?["scopes"] as? [String] ?? self.defaultScopes
-                
-                GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController, hint: nil, additionalScopes: scopes.isEmpty ? nil : scopes) { [weak self] result, error in
-                    if let error = error {
-                        let nsError = error as NSError
-                        let code = nsError.code
-                        
-                        switch code {
-                        case GIDSignInError.canceled.rawValue:
-                            reject("sign_in_cancelled", "User cancelled the sign in", error)
-                        case GIDSignInError.EMM.rawValue:
-                            reject("emm_error", "Enterprise Mobility Management error", error)
-                        case GIDSignInError.unknown.rawValue:
-                            reject("unknown_error", "Unknown error occurred", error)
-                        default:
-                            reject("sign_in_error", "Sign in failed: \(error.localizedDescription)", error)
-                        }
-                        return
-                    }
-                    
-                    guard let result = result,
-                          let userDict = self?.convertUserToDict(user: result.user) else {
-                        reject("sign_in_error", "Sign in failed: No user data received", nil)
-                        return
-                    }
-                    
-                    resolve(userDict)
+                guard let result = result,
+                      let userDict = self?.convertUserToDict(user: result.user) else {
+                    reject("sign_in_error", "Sign in failed: No user data received", nil)
+                    return
                 }
+                
+                resolve(userDict)
             }
         }
     }
     
     func signInSilently(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-            guard isConfigured else {
-                reject("not_configured", "Google Sign In is not configured. Call configure() first.", nil)
+        guard isConfigured else {
+            reject("not_configured", "Google Sign In is not configured. Call configure() first.", nil)
+            return
+        }
+        
+        GIDSignIn.sharedInstance.restorePreviousSignIn { [weak self] user, error in
+            if let error = error {
+                reject("sign_in_error", "Silent sign in failed: \(error.localizedDescription)", error)
                 return
             }
             
-            GIDSignIn.sharedInstance.restorePreviousSignIn { [weak self] user, error in
-                if let error = error {
-                    reject("sign_in_error", "Silent sign in failed: \(error.localizedDescription)", error)
-                    return
-                }
-                
-                guard let user = user else {
-                    reject("sign_in_required", "No previous sign in found", nil)
-                    return
-                }
-                
-                if let userDict = self?.convertUserToDict(user: user) {
-                    resolve(userDict)
-                } else {
-                    reject("conversion_error", "Failed to convert user data", nil)
-                }
+            guard let user = user else {
+                reject("sign_in_required", "No previous sign in found", nil)
+                return
+            }
+            
+            if let userDict = self?.convertUserToDict(user: user) {
+                resolve(userDict)
+            } else {
+                reject("conversion_error", "Failed to convert user data", nil)
             }
         }
     }
@@ -138,7 +136,7 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
         }
         
         guard let currentUser = GIDSignIn.sharedInstance.currentUser else {
-            reject("sign_in_required", "No user is currently signed in", nil)
+            resolve(NSNull())
             return
         }
         
@@ -155,14 +153,14 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
                 }
                 
                 guard let user = user else {
-                    reject("add_scopes_error", "Failed to add scopes: No user returned", nil)
+                    resolve(NSNull())
                     return
                 }
                 
                 if let userDict = self?.convertUserToDict(user: user) {
                     resolve(userDict)
                 } else {
-                    reject("conversion_error", "Failed to convert user data", nil)
+                    resolve(NSNull())
                 }
             }
         }
