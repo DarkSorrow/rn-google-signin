@@ -47,22 +47,23 @@ The plugin automatically:
    - Adds required Google Sign-In metadata
    - Configures Gradle dependencies
 
-### Manual Setup (if needed)
+### Manual Setup (without Firebase)
 
-If you prefer manual configuration, you can disable the plugin and configure manually:
+If you're not using Firebase, you can provide the `iosUrlScheme` option:
 
 ```json
 {
   "expo": {
     "plugins": [
       ["@novastera-oss/rn-google-signin", {
-        "iosClientId": "your-ios-client-id",
-        "androidClientId": "your-android-client-id"
+        "iosUrlScheme": "com.googleusercontent.apps.YOUR_CLIENT_ID"
       }]
     ]
   }
 }
 ```
+
+**Note**: The `iosUrlScheme` must start with `com.googleusercontent.apps.` and match your Google OAuth client ID.
 
 ## Usage
 

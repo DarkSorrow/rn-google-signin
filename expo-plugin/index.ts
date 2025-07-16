@@ -1,6 +1,7 @@
 // Expo Plugin for React Native Google Sign-In
 // This is completely separate from the main TurboModule
 
+import { appendScheme } from '@expo/config-plugins/build/ios/Scheme';
 import {
   AndroidConfig,
   IOSConfig,
@@ -10,15 +11,12 @@ import {
   withAndroidManifest,
 } from '@expo/config-plugins';
 import type { ConfigPlugin } from '@expo/config-plugins';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
 
-// Plugin options interface
+// Plugin options interface - for manual configuration
 export interface GoogleSigninOptions {
-  iosClientId?: string;
-  androidClientId?: string;
-  webClientId?: string;
-  iosReversedClientId?: string;
+  iosUrlScheme?: string; // For manual setup without Firebase
 }
 
 // Get package version dynamically
@@ -34,107 +32,56 @@ function getPackageVersion(): string {
 
 const GOOGLE_SIGNIN_PLUGIN = 'rn-google-signin-plugin';
 
-// Main plugin function
-const withRNGoogleSignin: ConfigPlugin<GoogleSigninOptions | void> = (config) => {
+// Validate options for manual setup
+function validateOptions(options: GoogleSigninOptions) {
+  const messagePrefix = `rn-google-signin config plugin`;
+  if (!options?.iosUrlScheme) {
+    throw new Error(
+      `${messagePrefix}: Missing \`iosUrlScheme\` in provided options: ${JSON.stringify(
+        options,
+      )}`,
+    );
+  }
+  if (!options.iosUrlScheme.startsWith('com.googleusercontent.apps.')) {
+    throw new Error(
+      `${messagePrefix}: \`iosUrlScheme\` must start with "com.googleusercontent.apps": ${JSON.stringify(
+        options,
+      )}`,
+    );
+  }
+}
+
+// Plugin for manual setup (without Firebase)
+const withGoogleSigninManual: ConfigPlugin<GoogleSigninOptions> = (config, options) => {
+  validateOptions(options);
   return withPlugins(config, [
-    // iOS configuration - automatically reads GoogleService-Info.plist and configures
-    withGoogleSigniniOS,
-    // Android configuration - automatically handles google-services.json
-    withGoogleSigninAndroid,
+    // iOS - add URL scheme manually
+    (cfg) => withGoogleUrlScheme(cfg, options),
+    // Android - add required metadata
+    withGoogleSigninAndroidManifest,
   ]);
 };
 
-// iOS plugin
-const withGoogleSigniniOS: ConfigPlugin = (config) => {
-  return withPlugins(config, [
-    // First handle the GoogleService-Info.plist file
-    IOSConfig.Google.withGoogleServicesFile,
-    // Then extract and configure the client IDs
-    withGoogleSigninInfoPlist,
-  ]);
-};
-
-// iOS Info.plist configuration
-const withGoogleSigninInfoPlist: ConfigPlugin = (config) => {
+// Add Google URL scheme to iOS Info.plist
+const withGoogleUrlScheme: ConfigPlugin<GoogleSigninOptions> = (config, options) => {
   return withInfoPlist(config, (config) => {
-    const projectRoot = config.modRequest?.projectRoot || process.cwd();
-    const googleServicesPlistPath = join(projectRoot, 'ios', 'GoogleService-Info.plist');
-    
-    if (existsSync(googleServicesPlistPath)) {
-      try {
-        const googleServicesContent = readFileSync(googleServicesPlistPath, 'utf8');
-        // Simple plist parsing for required fields
-        const clientIdMatch = googleServicesContent.match(/<key>CLIENT_ID<\/key>\s*<string>([^<]+)<\/string>/);
-        const reversedClientIdMatch = googleServicesContent.match(/<key>REVERSED_CLIENT_ID<\/key>\s*<string>([^<]+)<\/string>/);
-        const bundleIdMatch = googleServicesContent.match(/<key>BUNDLE_ID<\/key>\s*<string>([^<]+)<\/string>/);
-        
-        const googleServicesPlist = {
-          CLIENT_ID: clientIdMatch?.[1],
-          REVERSED_CLIENT_ID: reversedClientIdMatch?.[1],
-          BUNDLE_ID: bundleIdMatch?.[1]
-        };
-        
-        const clientId = googleServicesPlist.CLIENT_ID;
-        const reversedClientId = googleServicesPlist.REVERSED_CLIENT_ID;
-        const bundleId = config.ios?.bundleIdentifier || googleServicesPlist.BUNDLE_ID;
-        
-        if (clientId) {
-          // Add GIDClientID to Info.plist
-          config.modResults.GIDClientID = clientId;
-          
-          // Add URL schemes for Google Sign-In
-          const existingURLTypes = config.modResults.CFBundleURLTypes || [];
-          const newURLTypes = [...existingURLTypes];
-          
-          // Add reversed client ID scheme (required for Google Sign-In)
-          if (reversedClientId) {
-            const reversedClientExists = newURLTypes.some((urlType: any) => 
-              urlType.CFBundleURLSchemes?.includes(reversedClientId)
-            );
-            
-            if (!reversedClientExists) {
-              newURLTypes.push({
-                CFBundleURLName: 'GoogleSignIn',
-                CFBundleURLSchemes: [reversedClientId]
-              });
-            }
-          }
-          
-          // Add bundle ID scheme (for deep linking)
-          if (bundleId) {
-            const bundleIdExists = newURLTypes.some((urlType: any) => 
-              urlType.CFBundleURLSchemes?.includes(bundleId)
-            );
-            
-            if (!bundleIdExists) {
-              newURLTypes.push({
-                CFBundleURLName: 'BundleID',
-                CFBundleURLSchemes: [bundleId]
-              });
-            }
-          }
-          
-          config.modResults.CFBundleURLTypes = newURLTypes;
-        }
-      } catch (error) {
-        console.warn('Failed to read GoogleService-Info.plist:', error);
-      }
-    } else {
-      console.warn('GoogleService-Info.plist not found. Please add it to your ios/ directory.');
-    }
-    
+    config.modResults = appendScheme(options.iosUrlScheme!, config.modResults);
     return config;
   });
 };
 
-// Android plugin
-const withGoogleSigninAndroid: ConfigPlugin = (config) => {
+// Plugin for automatic setup (with Firebase)
+const withGoogleSigninAutomatic: ConfigPlugin = (config) => {
   return withPlugins(config, [
-    // Automatically handle google-services.json and gradle configuration
+    // Android - handle google-services.json
     AndroidConfig.GoogleServices.withClassPath,
     AndroidConfig.GoogleServices.withApplyPlugin,
     AndroidConfig.GoogleServices.withGoogleServicesFile,
-    // Add required metadata for Google Sign-In
+    
+    // iOS - handle GoogleService-Info.plist
+    IOSConfig.Google.withGoogleServicesFile,
+    
+    // Add required metadata for both platforms
     withGoogleSigninAndroidManifest,
   ]);
 };
@@ -170,6 +117,13 @@ const withGoogleSigninAndroidManifest: ConfigPlugin = (config) => {
     
     return config;
   });
+};
+
+// Main plugin function - handles both automatic and manual modes
+const withRNGoogleSignin: ConfigPlugin<GoogleSigninOptions | void> = (config, options) => {
+  return options
+    ? withGoogleSigninManual(config, options)
+    : withGoogleSigninAutomatic(config);
 };
 
 // Export the plugin with run-once protection
