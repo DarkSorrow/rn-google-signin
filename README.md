@@ -338,6 +338,16 @@ The following error codes are consistent across both platforms:
 1. **"No client ID found"**: Ensure you've provided the correct client IDs in the configuration
 2. **"No activity available"**: Make sure the app is in the foreground when calling sign-in methods
 3. **"Credential manager not initialized"**: Call `configure()` before using any sign-in methods
+4. **Infinite awaits or no response**: This was fixed in v0.1.0 by separating promise handling for different authentication flows
+
+### Promise Handling
+
+The library uses separate promise handling for different authentication flows to prevent race conditions:
+
+- **Credential Manager flow**: Used for simple sign-ins without custom scopes
+- **Google Sign-In SDK flow**: Used for sign-ins with custom scopes or offline access
+
+Each flow has its own promise management to prevent conflicts and infinite awaits.
 
 ### Android Issues
 

@@ -43,7 +43,8 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
     private var googleSignInClient: GoogleSignInClient? = null
     private var credentialManager: CredentialManager? = null
     private var isConfigured = false
-    private var pendingPromise: Promise? = null
+    private var credentialManagerPromise: Promise? = null
+    private var googleSignInPromise: Promise? = null
     private var webClientId: String? = null
     private var defaultScopes: List<String> = emptyList()
     private var nonce: String? = null
@@ -53,6 +54,15 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
     }
 
     override fun getName(): String = NAME
+
+    override fun onCatalystInstanceDestroy() {
+        super.onCatalystInstanceDestroy()
+        // Clean up any pending promises to prevent memory leaks
+        credentialManagerPromise?.reject("module_destroyed", "Module was destroyed")
+        googleSignInPromise?.reject("module_destroyed", "Module was destroyed")
+        credentialManagerPromise = null
+        googleSignInPromise = null
+    }
 
     // MARK: - Configuration
 
@@ -147,9 +157,14 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             return
         }
 
+        // Clear any existing promises to prevent conflicts
+        credentialManagerPromise?.reject("cancelled", "Previous sign in was cancelled by new request")
+        googleSignInPromise?.reject("cancelled", "Previous sign in was cancelled by new request")
+        credentialManagerPromise = null
+        googleSignInPromise = null
+
         // Use custom nonce if provided, otherwise generate one
         nonce = options?.getString("nonce") ?: generateNonce()
-        pendingPromise = promise
 
         // Use Credential Manager for modern sign-in if no custom scopes
         if (defaultScopes.isEmpty()) {
@@ -158,6 +173,9 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                 promise.reject("not_configured", "Google Sign In is not configured. Call configure() first.")
                 return
             }
+            
+            // Set the promise for Credential Manager flow
+            credentialManagerPromise = promise
             
             val googleIdOption = GetGoogleIdOption.Builder()
                 .setServerClientId(currentWebClientId)
@@ -192,32 +210,34 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                             putString("serverAuthCode", null)
                             putString("idToken", idTokenCredential.idToken)
                         }
-                        promise.resolve(response)
+                        credentialManagerPromise?.resolve(response)
                     } else {
-                        promise.reject("sign_in_error", "Sign in failed: No credential returned")
+                        credentialManagerPromise?.reject("sign_in_error", "Sign in failed: No credential returned")
                     }
                 } catch (e: GetCredentialException) {
                     // Handle different types of credential exceptions
                     when {
                         e.message?.contains("cancel", ignoreCase = true) == true -> {
-                            promise.reject("sign_in_cancelled", "User cancelled the sign in")
+                            credentialManagerPromise?.reject("sign_in_cancelled", "User cancelled the sign in")
                         }
                         e.message?.contains("no credential", ignoreCase = true) == true -> {
-                            promise.reject("no_credential", "No credential available")
+                            credentialManagerPromise?.reject("no_credential", "No credential available")
                         }
                         else -> {
-                            promise.reject("sign_in_error", "Sign in failed: ${e.message}", e)
+                            credentialManagerPromise?.reject("sign_in_error", "Sign in failed: ${e.message}", e)
                         }
                     }
                 } catch (e: GoogleIdTokenParsingException) {
-                    promise.reject("parsing_error", "Failed to parse Google ID token: ${e.message}", e)
+                    credentialManagerPromise?.reject("parsing_error", "Failed to parse Google ID token: ${e.message}", e)
                 } catch (e: Exception) {
-                    promise.reject("sign_in_error", "Sign in failed: ${e.message}", e)
+                    credentialManagerPromise?.reject("sign_in_error", "Sign in failed: ${e.message}", e)
+                } finally {
+                    credentialManagerPromise = null
                 }
             }
         } else {
             // Fallback to legacy GoogleSignIn for scopes or offlineAccess
-            pendingPromise = promise
+            googleSignInPromise = promise
             googleSignInClient?.let { client ->
                 val signInIntent = client.signInIntent
                 activity.startActivityForResult(signInIntent, RC_SIGN_IN)
@@ -318,7 +338,10 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
         }
 
         val scopeList = scopes.toArrayList().map { Scope(it.toString()) }
-        pendingPromise = promise
+        
+        // Clear any existing promises to prevent conflicts
+        googleSignInPromise?.reject("cancelled", "Previous add scopes was cancelled by new request")
+        googleSignInPromise = promise
 
         GoogleSignIn.requestPermissions(
             activity,
@@ -521,21 +544,21 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
         when (requestCode) {
             RC_SIGN_IN -> {
                 val task = GoogleSignIn.getSignedInAccountFromIntent(intent)
-                handleSignInResult(task, pendingPromise)
-                pendingPromise = null
+                handleSignInResult(task, googleSignInPromise)
+                googleSignInPromise = null
             }
             RC_ADD_SCOPES -> {
                 if (resultCode == Activity.RESULT_OK) {
                     val account = GoogleSignIn.getLastSignedInAccount(reactContext)
                     if (account != null) {
-                        pendingPromise?.resolve(convertAccountToMap(account))
+                        googleSignInPromise?.resolve(convertAccountToMap(account))
                     } else {
-                        pendingPromise?.reject("add_scopes_error", "Failed to add scopes: No account found")
+                        googleSignInPromise?.reject("add_scopes_error", "Failed to add scopes: No account found")
                     }
                 } else {
-                    pendingPromise?.reject("add_scopes_cancelled", "User cancelled adding scopes")
+                    googleSignInPromise?.reject("add_scopes_cancelled", "User cancelled adding scopes")
                 }
-                pendingPromise = null
+                googleSignInPromise = null
             }
         }
     }
