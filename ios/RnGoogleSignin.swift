@@ -1,12 +1,14 @@
 import Foundation
 import GoogleSignIn
 import React
+import CryptoKit
 
 @objc(RnGoogleSignin)
 class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
     
     private var isConfigured = false
     private var defaultScopes: [String] = []
+    private var nonce: String?
     
     // MARK: - Configuration
     
@@ -32,7 +34,7 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
             fatalError("No client ID found. Please provide iosClientId, webClientId, or ensure GoogleService-Info.plist is present.")
         }
         
-        // Configure Google Sign In
+        // Configure Google Sign In with modern approach
         let gidConfig = GIDConfiguration(clientID: finalClientId)
         
         // Set additional configuration if provided
@@ -72,34 +74,23 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
                 return
             }
             
+            // Use custom nonce if provided, otherwise generate one
+            self.nonce = options?["nonce"] as? String ?? self.generateNonce()
+            
             // Get scopes from options or use default scopes
             let scopes = options?["scopes"] as? [String] ?? self.defaultScopes
             
-            GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController, hint: nil, additionalScopes: scopes.isEmpty ? nil : scopes) { [weak self] result, error in
-                if let error = error {
-                    let nsError = error as NSError
-                    let code = nsError.code
-                    
-                    switch code {
-                    case GIDSignInError.canceled.rawValue:
-                        reject("sign_in_cancelled", "User cancelled the sign in", error)
-                    case GIDSignInError.EMM.rawValue:
-                        reject("emm_error", "Enterprise Mobility Management error", error)
-                    case GIDSignInError.unknown.rawValue:
-                        reject("unknown_error", "Unknown error occurred", error)
-                    default:
-                        reject("sign_in_error", "Sign in failed: \(error.localizedDescription)", error)
-                    }
-                    return
+            // Use modern Google Identity approach for simple sign-ins
+            if scopes.isEmpty {
+                // Modern approach - use Google Identity
+                GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController, hint: nil, additionalScopes: nil) { [weak self] result, error in
+                    self?.handleSignInResult(result: result, error: error, resolve: resolve, reject: reject)
                 }
-                
-                guard let result = result,
-                      let userDict = self?.convertUserToDict(user: result.user) else {
-                    reject("sign_in_error", "Sign in failed: No user data received", nil)
-                    return
+            } else {
+                // Legacy approach for scopes/OAuth features
+                GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController, hint: nil, additionalScopes: scopes) { [weak self] result, error in
+                    self?.handleSignInResult(result: result, error: error, resolve: resolve, reject: reject)
                 }
-                
-                resolve(userDict)
             }
         }
     }
@@ -240,6 +231,33 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
     
     // MARK: - Helper Methods
     
+    private func handleSignInResult(result: GIDSignInResult?, error: Error?, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        if let error = error {
+            let nsError = error as NSError
+            let code = nsError.code
+            
+            switch code {
+            case GIDSignInError.canceled.rawValue:
+                reject("sign_in_cancelled", "User cancelled the sign in", error)
+            case GIDSignInError.EMM.rawValue:
+                reject("emm_error", "Enterprise Mobility Management error", error)
+            case GIDSignInError.unknown.rawValue:
+                reject("unknown_error", "Unknown error occurred", error)
+            default:
+                reject("sign_in_error", "Sign in failed: \(error.localizedDescription)", error)
+            }
+            return
+        }
+        
+        guard let result = result,
+              let userDict = convertUserToDict(user: result.user) else {
+            reject("sign_in_error", "Sign in failed: No user data received", nil)
+            return
+        }
+        
+        resolve(userDict)
+    }
+    
     private func convertUserToDict(user: GIDGoogleUser) -> [String: Any]? {
         guard let profile = user.profile else { return nil }
         
@@ -281,6 +299,12 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
             return getTopViewController(base: presented)
         }
         return base
+    }
+    
+    private func generateNonce() -> String {
+        let random = try! SecureRandom(using: .init())
+        let data = Data((0..<32).map { _ in UInt8(random.next()) })
+        return data.base64EncodedString()
     }
 }
 

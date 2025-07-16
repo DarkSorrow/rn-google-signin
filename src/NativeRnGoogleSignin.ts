@@ -17,6 +17,7 @@ export interface ConfigureParams {
 
 export interface SignInParams {
   scopes?: string[];
+  nonce?: string;
 }
 
 export interface AddScopesParams {
