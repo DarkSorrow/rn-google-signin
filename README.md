@@ -103,12 +103,12 @@ try {
 }
 ```
 
-**Important**: Due to React Native TurboModule requirements, optional parameters must always be passed, even if `undefined` or `null`:
+**Important**: Due to React Native TurboModule requirements, optional parameters must always be passed as `null` if there is no value, `{}` could work too for objects
 
 ```typescript
 // ✅ Correct - always pass the parameter
-await GoogleSignin.signIn(undefined);
-await GoogleSignin.hasPlayServices(undefined);
+await GoogleSignin.signIn(null);
+await GoogleSignin.hasPlayServices(null);
 
 // ❌ Incorrect - will cause runtime errors
 await GoogleSignin.signIn();

@@ -94,7 +94,7 @@ export interface Spec extends TurboModule {
   configure(config: ConfigureParams): void;
   
   // Sign In
-  signIn(options?: SignInParams | null): Promise<SignInResponse>;
+  signIn(options: SignInParams | null): Promise<SignInResponse>;
   signInSilently(): Promise<SignInSilentlyResponse>;
   addScopes(scopes: string[]): Promise<SignInResponse | null>;
   
@@ -109,7 +109,7 @@ export interface Spec extends TurboModule {
   // Utilities
   clearCachedAccessToken(accessToken: string): Promise<void>;
   getTokens(): Promise<GetTokensResponse>;
-  hasPlayServices(options?: HasPlayServicesParams | null): Promise<boolean>;
+  hasPlayServices(options: HasPlayServicesParams | null): Promise<boolean>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('RnGoogleSignin');
