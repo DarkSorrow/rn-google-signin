@@ -2233,7 +2233,6 @@ __metadata:
     turbo: ^1.10.7
     typescript: ^5.8.3
   peerDependencies:
-    "@expo/config-plugins": "*"
     react: "*"
     react-native: "*"
   languageName: unknown
