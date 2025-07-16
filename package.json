@@ -148,6 +148,12 @@
         {
           "project": "tsconfig.build.json"
         }
+      ],
+      [
+        "typescript",
+        {
+          "project": "expo-plugin/tsconfig.json"
+        }
       ]
     ]
   },
