@@ -1,348 +1,130 @@
-# Contributing to @novastera-oss/rn-google-signin
+# Contributing
 
-Thank you for your interest in contributing to this React Native Google Sign-In package! We welcome contributions from the community.
+Contributions are always welcome, no matter how large or small!
 
-## Table of Contents
+We want this community to be friendly and respectful to each other. Please follow it in all your interactions with the project. Before contributing, please read the [code of conduct](./CODE_OF_CONDUCT.md).
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Project Structure](#project-structure)
-- [Making Changes](#making-changes)
-- [Testing](#testing)
-- [Submitting Changes](#submitting-changes)
-- [Working with Dependencies](#working-with-dependencies)
-- [Release Process](#release-process)
+## Development workflow
 
-## Code of Conduct
+This project is a monorepo managed using [Yarn workspaces](https://yarnpkg.com/features/workspaces). It contains the following packages:
 
-By participating in this project, you agree to abide by our Code of Conduct:
+- The library package in the root directory.
+- An example app in the `example/` directory.
 
-- Be respectful and inclusive
-- Focus on constructive feedback
-- Help maintain a welcoming environment for all contributors
-- Respect that this package focuses on basic Google Sign-In functionality
+To get started with the project, run `yarn` in the root directory to install the required dependencies for each package:
 
-## Getting Started
-
-### Prerequisites
-
-- **Node.js** 22+ and npm
-- **React Native development environment** (Android Studio, Xcode)
-- **Git** with submodule support
-- **Platform-specific tools**:
-  - **macOS**: Xcode 15+, CocoaPods
-  - **Windows**: Android Studio, PowerShell 5.1+
-  - **Linux**: Android Studio
-
-### First-time Setup
-
-1. **Fork and clone the repository**:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/rn-google-signin.git
-   cd rn-google-signin
-   ```
-
-2. **Initialize Git submodules**:
-   ```bash
-   git submodule update --init --recursive
-   ```
-
-3. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-4. **Set up iOS dependencies** (macOS/Linux):
-   ```bash
-   npm run setup-ios-deps
-   ```
-   
-   **Windows**:
-   ```bash
-   npm run setup-ios-deps:windows
-   ```
-
-## Development Setup
-
-### Project Structure
-
-```
-rn-google-signin/
-├── src/                          # TypeScript source code
-│   ├── GoogleSignIn.ts          # Main API wrapper
-│   ├── NativeGoogleSignin.ts    # Turbo Module specification
-│   ├── types.ts                 # TypeScript type definitions
-│   └── index.ts                 # Public API exports
-├── android/                      # Android native implementation
-│   ├── src/main/java/...        # Kotlin source files
-│   └── build.gradle             # Android build configuration
-├── ios/                         # iOS native implementation
-│   ├── *.swift, *.m, *.h       # Swift/Objective-C source files
-│   └── third-party/             # Git submodules for iOS dependencies
-├── plugin/                      # Expo config plugin
-│   ├── src/withGoogleSignin.ts  # Plugin implementation
-│   └── tsconfig.json           # Plugin TypeScript config
-├── scripts/                     # Setup and utility scripts
-├── lib/                         # Built output (auto-generated)
-├── dependencies.json            # Centralized dependency versions
-├── package.json                # Package configuration
-└── rn-google-signin.podspec    # iOS CocoaPods specification
+```sh
+yarn
 ```
 
-### Key Files
+> Since the project relies on Yarn workspaces, you cannot use [`npm`](https://github.com/npm/cli) for development.
 
-- **`src/GoogleSignIn.ts`**: Main API implementation
-- **`src/NativeGoogleSignin.ts`**: Turbo Module interface
-- **`android/src/main/java/.../RNGoogleSigninModule.kt`**: Android implementation
-- **`ios/RNGoogleSignin.swift`**: iOS implementation
-- **`dependencies.json`**: Single source of truth for all dependency versions
-- **`plugin/src/withGoogleSignin.ts`**: Expo config plugin
+The [example app](/example/) demonstrates usage of the library. You need to run it to test any changes you make.
 
-## Making Changes
+It is configured to use the local version of the library, so any changes you make to the library's source code will be reflected in the example app. Changes to the library's JavaScript code will be reflected in the example app without a rebuild, but native code changes will require a rebuild of the example app.
 
-### 1. Create a Feature Branch
+If you want to use Android Studio or XCode to edit the native code, you can open the `example/android` or `example/ios` directories respectively in those editors. To edit the Objective-C or Swift files, open `example/ios/RnGoogleSigninExample.xcworkspace` in XCode and find the source files at `Pods > Development Pods > @novastera-oss/rn-google-signin`.
 
-```bash
-git checkout -b feature/your-feature-name
-# or
-git checkout -b fix/your-bug-fix
+To edit the Java or Kotlin files, open `example/android` in Android studio and find the source files at `novastera-oss-rn-google-signin` under `Android`.
+
+You can use various commands from the root directory to work with the project.
+
+To start the packager:
+
+```sh
+yarn example start
 ```
 
-### 2. Development Guidelines
+To run the example app on Android:
 
-#### TypeScript Code
-- Use strict TypeScript (no `any` types)
-- Follow the existing code style
-- Add proper JSDoc comments for public APIs
-- Ensure all exports have proper type definitions
-
-#### Native Code (iOS)
-- Follow Swift/Objective-C best practices
-- Add proper error handling
-- Use the existing patterns for Promise resolution/rejection
-- Test on multiple iOS versions when possible
-
-#### Native Code (Android)
-- Follow Kotlin best practices
-- Use coroutines for async operations
-- Implement proper error handling
-- Test on multiple Android API levels when possible
-
-#### Expo Plugin
-- Follow Expo plugin conventions
-- Handle configuration edge cases gracefully
-- Provide clear error messages
-
-### 3. Code Style
-
-Run the linter before committing:
-```bash
-npm run lint
-npm run typecheck
+```sh
+yarn example android
 ```
 
-Fix auto-fixable issues:
-```bash
-npm run lint:fix
+To run the example app on iOS:
+
+```sh
+yarn example ios
 ```
 
-## Testing
+To confirm that the app is running with the new architecture, you can check the Metro logs for a message like this:
 
-### Run Tests
-
-```bash
-# Run all tests
-npm test
-
-# Run TypeScript type checking
-npm run typecheck
-
-# Run linting
-npm run lint
+```sh
+Running "RnGoogleSigninExample" with {"fabric":true,"initialProps":{"concurrentRoot":true},"rootTag":1}
 ```
 
-### Manual Testing
+Note the `"fabric":true` and `"concurrentRoot":true` properties.
 
-1. **Test iOS setup**:
-   ```bash
-   npm run setup-ios-deps
-   # Verify ios/third-party/GoogleSignIn-iOS exists
-   ```
+Make sure your code passes TypeScript and ESLint. Run the following to verify:
 
-2. **Test Android build** (if you have Android development setup):
-   ```bash
-   cd android && ./gradlew build
-   ```
-
-3. **Test plugin build**:
-   ```bash
-   npm run build:plugin
-   # Verify plugin/build/ directory is created
-   ```
-
-### Integration Testing
-
-If you have access to a React Native app:
-
-1. Create a test app or use the example (if available)
-2. Install your local version:
-   ```bash
-   npm pack
-   # Install the generated .tgz file in your test app
-   ```
-3. Test the sign-in flow on both platforms
-
-## Submitting Changes
-
-### 1. Commit Guidelines
-
-Use conventional commit messages:
-```bash
-git commit -m "feat: add silent sign-in support"
-git commit -m "fix: resolve Android credential manager issue"
-git commit -m "docs: update installation instructions"
-git commit -m "refactor: simplify error handling"
+```sh
+yarn typecheck
+yarn lint
 ```
 
-### 2. Pull Request Process
+To fix formatting errors, run the following:
 
-1. **Push your branch**:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-2. **Create a Pull Request** with:
-   - Clear title and description
-   - Reference any related issues
-   - Include testing information
-   - Note any breaking changes
-
-3. **PR Requirements**:
-   - All tests must pass
-   - Code must be linted
-   - TypeScript must compile without errors
-   - Include relevant documentation updates
-
-### 3. Review Process
-
-- Maintainers will review your PR
-- Address any requested changes
-- Once approved, your PR will be merged
-
-## Working with Dependencies
-
-### Centralized Version Management
-
-This project uses centralized dependency management via `dependencies.json`:
-
-```json
-{
-  "dependencies": {
-    "googleSignIn": {
-      "ios": {
-        "version": "9.0.0",
-        "commit": "3996d908c7b3ce8a87d39c808f9a6b2a08fbe043"
-      },
-      "android": {
-        "playServicesAuth": "20.7.0",
-        "credentials": "1.2.2",
-        "googleId": "1.1.0"
-      }
-    }
-  }
-}
+```sh
+yarn lint --fix
 ```
 
-### Updating Dependencies
+Remember to add tests for your change if possible. Run the unit tests by:
 
-#### iOS GoogleSignIn SDK
-
-1. **Update `dependencies.json`**:
-   ```json
-   {
-     "ios": {
-       "version": "NEW_VERSION",
-       "commit": "NEW_COMMIT_HASH"
-     }
-   }
-   ```
-
-2. **Update the submodule**:
-   ```bash
-   cd ios/third-party/GoogleSignIn-iOS
-   git fetch
-   git checkout NEW_COMMIT_HASH
-   cd ../../..
-   git add ios/third-party/GoogleSignIn-iOS
-   git commit -m "deps: update GoogleSignIn iOS to NEW_VERSION"
-   ```
-
-#### Android Dependencies
-
-1. **Update `dependencies.json`**:
-   ```json
-   {
-     "android": {
-       "playServicesAuth": "NEW_VERSION",
-       "credentials": "NEW_VERSION",
-       "googleId": "NEW_VERSION"
-     }
-   }
-   ```
-
-2. **Test the build**:
-   ```bash
-   cd android && ./gradlew build
-   ```
-
-### Git Submodules
-
-Useful commands for working with submodules:
-
-```bash
-# Initialize submodules (first time)
-git submodule update --init --recursive
-
-# Update submodules to latest from remote
-git submodule update --remote
-
-# Update to specific commit
-cd ios/third-party/GoogleSignIn-iOS
-git checkout COMMIT_HASH
-cd ../../..
-git add ios/third-party/GoogleSignIn-iOS
-git commit -m "Update GoogleSignIn submodule"
-
-# Check submodule status
-git submodule status
+```sh
+yarn test
 ```
 
-## Release Process
+### Commit message convention
 
-> **Note**: Only maintainers can create releases.
+We follow the [conventional commits specification](https://www.conventionalcommits.org/en) for our commit messages:
 
-The release process is automated via GitHub Actions:
+- `fix`: bug fixes, e.g. fix crash due to deprecated method.
+- `feat`: new features, e.g. add new method to the module.
+- `refactor`: code refactor, e.g. migrate from class components to hooks.
+- `docs`: changes into documentation, e.g. add usage example for the module..
+- `test`: adding or updating tests, e.g. add integration tests using detox.
+- `chore`: tooling changes, e.g. change CI config.
 
-1. **Create a GitHub Release**:
-   - Go to GitHub → Releases → "Draft a new release"
-   - Tag: `v1.0.0` (follow semantic versioning)
-   - Title: `Release 1.0.0`
-   - Write release notes
-   - Click "Publish release"
+Our pre-commit hooks verify that your commit message matches this format when committing.
 
-2. **Automated Process**:
-   - GitHub Actions will automatically run CI tests
-   - If tests pass, the package will be published to NPM
-   - The release will be available on GitHub and NPM
+### Linting and tests
 
-## Questions or Issues?
+[ESLint](https://eslint.org/), [Prettier](https://prettier.io/), [TypeScript](https://www.typescriptlang.org/)
 
-- **Bug reports**: Create an issue with reproduction steps
-- **Feature requests**: Create an issue with detailed description
-- **Questions**: Start a discussion or create an issue
-- **Security issues**: Email contact@novastera.com directly
+We use [TypeScript](https://www.typescriptlang.org/) for type checking, [ESLint](https://eslint.org/) with [Prettier](https://prettier.io/) for linting and formatting the code, and [Jest](https://jestjs.io/) for testing.
 
-## Thank You!
+Our pre-commit hooks verify that the linter and tests pass when committing.
 
-Your contributions help make this package better for everyone. We appreciate your time and effort in improving React Native Google Sign-In functionality. 
+### Publishing to npm
+
+We use [release-it](https://github.com/release-it/release-it) to make it easier to publish new versions. It handles common tasks like bumping version based on semver, creating tags and releases etc.
+
+To publish new versions, run the following:
+
+```sh
+yarn release
+```
+
+### Scripts
+
+The `package.json` file contains various scripts for common tasks:
+
+- `yarn`: setup project by installing dependencies.
+- `yarn typecheck`: type-check files with TypeScript.
+- `yarn lint`: lint files with ESLint.
+- `yarn test`: run unit tests with Jest.
+- `yarn example start`: start the Metro server for the example app.
+- `yarn example android`: run the example app on Android.
+- `yarn example ios`: run the example app on iOS.
+
+### Sending a pull request
+
+> **Working on your first pull request?** You can learn how from this _free_ series: [How to Contribute to an Open Source Project on GitHub](https://app.egghead.io/playlists/how-to-contribute-to-an-open-source-project-on-github).
+
+When you're sending a pull request:
+
+- Prefer small pull requests focused on one change.
+- Verify that linters and tests are passing.
+- Review the documentation to make sure it looks good.
+- Follow the pull request template when opening a pull request.
+- For pull requests that change the API or implementation, discuss with maintainers first by opening an issue.

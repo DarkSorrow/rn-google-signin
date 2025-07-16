@@ -1,34 +1,42 @@
-def safeExtGet(prop, fallback) {
-  rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+buildscript {
+  ext.getExtOrDefault = {name ->
+    return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties['RnGoogleSignin_' + name]
+  }
+
+  repositories {
+    google()
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath "com.android.tools.build:gradle:8.7.2"
+    // noinspection DifferentKotlinGradleVersion
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${getExtOrDefault('kotlinVersion')}"
+  }
 }
+
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+apply plugin: "com.facebook.react"
 
 def getExtOrIntegerDefault(name) {
-  return rootProject.ext.has(name) ? rootProject.ext.get(name) : 21
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["RnGoogleSignin_" + name]).toInteger()
 }
-
-def isNewArchitectureEnabled() {
-  return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
-}
-
-apply plugin: 'com.android.library'
-apply plugin: 'org.jetbrains.kotlin.android'
 
 android {
-  namespace "com.novastera.rngooglesignin"
-  
-  // Ensure consistent package naming for Turbo Modules
-  group = "com.novastera.rngooglesignin"
-  
-  buildFeatures {
-    buildConfig true
-  }
-  
-  compileSdkVersion getExtOrIntegerDefault('compileSdkVersion')
+  namespace "com.novasteraoss.rngooglesignin"
+
+  compileSdkVersion getExtOrIntegerDefault("compileSdkVersion")
 
   defaultConfig {
-    minSdkVersion getExtOrIntegerDefault('minSdkVersion')
-    targetSdkVersion getExtOrIntegerDefault('targetSdkVersion')
-    buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
+    minSdkVersion getExtOrIntegerDefault("minSdkVersion")
+    targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
+  }
+
+  buildFeatures {
+    buildConfig true
   }
 
   buildTypes {
@@ -46,14 +54,11 @@ android {
     targetCompatibility JavaVersion.VERSION_1_8
   }
 
-  kotlinOptions {
-    jvmTarget = "1.8"
-  }
-
   sourceSets {
     main {
       java.srcDirs += [
-        "src/main/java"
+        "generated/java",
+        "generated/jni"
       ]
     }
   }
@@ -64,90 +69,15 @@ repositories {
   google()
 }
 
-
+def kotlin_version = getExtOrDefault("kotlinVersion")
 
 dependencies {
-  //noinspection GradleDynamicVersion
-  implementation "com.facebook.react:react-native:+"  // From node_modules
-  implementation "com.google.android.gms:play-services-auth:${safeExtGet('googlePlayServicesAuthVersion', '21.3.0')}"
-  implementation "androidx.credentials:credentials:${safeExtGet('credentialsVersion', '1.2.2')}"
-  implementation "androidx.credentials:credentials-play-services-auth:${safeExtGet('credentialsPlayServicesAuthVersion', '1.2.2')}"
-  implementation "com.google.android.libraries.identity.googleid:googleid:${safeExtGet('googleIdVersion', '1.1.0')}"
+  implementation "com.facebook.react:react-android"
+  implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
 
-// Fix Gradle task dependency issues for React Native autolinking
-afterEvaluate {
-  // Fix resource packaging dependencies - handle naming inconsistencies
-  tasks.matching { task ->
-    task.name.contains("packageDebugResources")
-  }.configureEach { task ->
-    // Try multiple possible task names due to naming inconsistencies
-    def possibleResValuesTasks = [
-      "generateDebugResValues",
-      "generateDebugResValuesDebug",
-      "generateDebugResValuesRelease"
-    ]
-    
-    def resValuesTask = null
-    for (def taskName : possibleResValuesTasks) {
-      resValuesTask = tasks.findByName(taskName)
-      if (resValuesTask != null) break
-    }
-    
-    if (resValuesTask == null) {
-      // Try to find by pattern if exact name doesn't work
-      def resTasks = tasks.findAll { it.name.contains("generateDebugResValues") }
-      if (!resTasks.isEmpty()) {
-        resValuesTask = resTasks.first()
-      }
-    }
-    
-    if (resValuesTask != null) {
-      task.dependsOn(resValuesTask)
-    }
-  }
-  
-  tasks.matching { task ->
-    task.name.contains("packageReleaseResources")
-  }.configureEach { task ->
-    // Try multiple possible task names due to naming inconsistencies
-    def possibleResValuesTasks = [
-      "generateReleaseResValues",
-      "generateReleaseResValuesDebug",
-      "generateReleaseResValuesRelease"
-    ]
-    
-    def resValuesTask = null
-    for (def taskName : possibleResValuesTasks) {
-      resValuesTask = tasks.findByName(taskName)
-      if (resValuesTask != null) break
-    }
-    
-    if (resValuesTask == null) {
-      // Try to find by pattern if exact name doesn't work
-      def resTasks = tasks.findAll { it.name.contains("generateReleaseResValues") }
-      if (!resTasks.isEmpty()) {
-        resValuesTask = resTasks.first()
-      }
-    }
-    
-    if (resValuesTask != null) {
-      task.dependsOn(resValuesTask)
-    }
-  }
-  
-  // Fix codegen task dependencies for React Native New Architecture
-  if (isNewArchitectureEnabled()) {
-    tasks.matching { task ->
-      task.name.contains("generateCodegenArtifactsFromSchema")
-    }.configureEach { task ->
-      // Find the corresponding schema task
-      def schemaTaskName = task.name.replace("generateCodegenArtifactsFromSchema", "generateCodegenSchemaFromJavaScript")
-      def schemaTask = tasks.findByName(schemaTaskName)
-      
-      if (schemaTask != null) {
-        task.dependsOn(schemaTask)
-      }
-    }
-  }
+react {
+  jsRootDir = file("../src/")
+  libraryName = "RnGoogleSignin"
+  codegenJavaPackageName = "com.novasteraoss.rngooglesignin"
 }
