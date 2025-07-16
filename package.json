@@ -10,10 +10,7 @@
       "types": "./lib/typescript/src/index.d.ts",
       "default": "./lib/module/index.js"
     },
-    "./expo-plugin": {
-      "types": "./expo-plugin/build/withGoogleSignIn.d.ts",
-      "default": "./expo-plugin/build/withGoogleSignIn.js"
-    },
+    "./app.plugin.js": "./app.plugin.js",
     "./package.json": "./package.json"
   },
   "files": [
@@ -48,6 +45,7 @@
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
     "build:expo-plugin": "cd expo-plugin && tsc",
+    "test:plugin": "node test-plugin.js",
     "prepare": "bob build && yarn build:expo-plugin",
     "release": "release-it --only-version"
   },

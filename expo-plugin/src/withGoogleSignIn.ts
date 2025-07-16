@@ -1,21 +1,20 @@
 // Expo Plugin for React Native Google Sign-In
 // This is completely separate from the main TurboModule
 
-import { appendScheme } from '@expo/config-plugins/build/ios/Scheme';
-import {
+const { appendScheme } = require('@expo/config-plugins/build/ios/Scheme');
+const {
   AndroidConfig,
   IOSConfig,
   createRunOncePlugin,
   withInfoPlist,
   withPlugins,
   withAndroidManifest,
-} from '@expo/config-plugins';
-import type { ConfigPlugin } from '@expo/config-plugins';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+} = require('@expo/config-plugins');
+const { readFileSync } = require('fs');
+const { join } = require('path');
 
 // Plugin options interface - for manual configuration
-export interface GoogleSigninOptions {
+interface GoogleSigninOptions {
   iosUrlScheme?: string; // For manual setup without Firebase
 }
 
@@ -52,16 +51,16 @@ function validateOptions(options: GoogleSigninOptions) {
 }
 
 // Add Google URL scheme to iOS Info.plist
-const withGoogleUrlScheme: ConfigPlugin<GoogleSigninOptions> = (config, options) => {
-  return withInfoPlist(config, (config) => {
+const withGoogleUrlScheme = (config: any, options: GoogleSigninOptions) => {
+  return withInfoPlist(config, (config: any) => {
     config.modResults = appendScheme(options.iosUrlScheme!, config.modResults);
     return config;
   });
 };
 
 // Android manifest configuration
-const withGoogleSigninAndroidManifest: ConfigPlugin = (config) => {
-  return withAndroidManifest(config, (config) => {
+const withGoogleSigninAndroidManifest = (config: any) => {
+  return withAndroidManifest(config, (config: any) => {
     const application = config.modResults.manifest.application?.[0];
     
     if (application) {
@@ -93,18 +92,18 @@ const withGoogleSigninAndroidManifest: ConfigPlugin = (config) => {
 };
 
 // Plugin for manual setup (without Firebase)
-const withGoogleSigninManual: ConfigPlugin<GoogleSigninOptions> = (config, options) => {
+const withGoogleSigninManual = (config: any, options: GoogleSigninOptions) => {
   validateOptions(options);
   return withPlugins(config, [
     // iOS - add URL scheme manually
-    (cfg) => withGoogleUrlScheme(cfg, options),
+    (cfg: any) => withGoogleUrlScheme(cfg, options),
     // Android - add required metadata
     withGoogleSigninAndroidManifest,
   ]);
 };
 
 // Plugin for automatic setup (with Firebase)
-const withGoogleSigninAutomatic: ConfigPlugin = (config) => {
+const withGoogleSigninAutomatic = (config: any) => {
   return withPlugins(config, [
     // Android - handle google-services.json
     AndroidConfig.GoogleServices.withClassPath,
@@ -120,7 +119,7 @@ const withGoogleSigninAutomatic: ConfigPlugin = (config) => {
 };
 
 // Main plugin function - handles both automatic and manual modes
-const withRNGoogleSignin: ConfigPlugin<GoogleSigninOptions | void> = (config, options) => {
+const withRNGoogleSignin = (config: any, options?: GoogleSigninOptions) => {
   return options
     ? withGoogleSigninManual(config, options)
     : withGoogleSigninAutomatic(config);
@@ -129,4 +128,4 @@ const withRNGoogleSignin: ConfigPlugin<GoogleSigninOptions | void> = (config, op
 // Export the plugin with run-once protection
 const plugin = createRunOncePlugin(withRNGoogleSignin, GOOGLE_SIGNIN_PLUGIN, getPackageVersion());
 
-export default plugin; 
+module.exports = plugin; 
