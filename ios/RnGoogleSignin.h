@@ -1,7 +1,7 @@
 #import <RnGoogleSigninSpec/RnGoogleSigninSpec.h>
 
-// Import the Swift module
-@import RnGoogleSignin;
+// Forward declaration for the Swift class
+@class RnGoogleSignin;
 
 @interface RnGoogleSignin : NSObject <NativeRnGoogleSigninSpec>
 

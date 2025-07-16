@@ -25,7 +25,9 @@ Pod::Spec.new do |s|
   
   s.module_map = "ios/module.modulemap"
 
-  s.dependency "GoogleSignIn", "~> 9.0"
+  # Use local Google Sign-In SDK from submodule
+  s.dependency "GoogleSignIn", :path => "ios/google_signin"
+  # Use remote GoogleSignInSwiftSupport since we can't modify the submodule
   s.dependency "GoogleSignInSwiftSupport", "~> 9.0"
 
   install_modules_dependencies(s)
