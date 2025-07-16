@@ -247,21 +247,71 @@ This library uses the new Google Identity library instead of the deprecated Goog
 
 ### Error Handling
 
-The new library provides more specific error types:
+The library provides consistent error codes across iOS and Android platforms:
 
 ```typescript
 try {
   await GoogleSignin.signIn();
 } catch (error) {
-  if (error.code === 'sign_in_cancelled') {
-    // User cancelled the sign in
-  } else if (error.code === 'no_credential') {
-    // No credential available
-  } else if (error.code === 'parsing_error') {
-    // Failed to parse Google ID token
+  switch (error.code) {
+    case 'sign_in_cancelled':
+      // User cancelled the sign in
+      break;
+    case 'sign_in_required':
+      // Sign in required (for silent sign in)
+      break;
+    case 'no_credential':
+      // No credential available
+      break;
+    case 'network_error':
+      // Network error occurred
+      break;
+    case 'configuration_error':
+      // Configuration error (missing client ID, etc.)
+      break;
+    case 'not_configured':
+      // Google Sign In is not configured
+      break;
+    case 'token_error':
+      // Token-related error
+      break;
+    case 'keychain_error':
+      // Keychain error (iOS only)
+      break;
+    case 'play_services_not_available':
+      // Play services not available (Android only)
+      break;
+    default:
+      // Handle other errors
+      break;
   }
 }
 ```
+
+#### Consistent Error Codes
+
+The following error codes are consistent across both platforms:
+
+- `sign_in_cancelled` - User cancelled the sign in
+- `sign_in_required` - Sign in required (for silent sign in)
+- `sign_in_error` - Generic sign in error
+- `not_configured` - Google Sign In is not configured
+- `no_activity` - No current activity available
+- `client_error` - Google Sign In client not initialized
+- `token_error` - Token-related error
+- `add_scopes_error` - Failed to add scopes
+- `revoke_error` - Failed to revoke access
+- `configuration_error` - Configuration error
+- `conversion_error` - Failed to convert user data
+- `no_credential` - No credential available
+- `unknown_error` - Unknown error occurred
+- `network_error` - Network error
+- `keychain_error` - Keychain error (iOS only)
+- `not_in_keychain` - User not found in keychain (iOS only)
+- `scopes_error` - Scope error occurred (iOS only)
+- `emm_error` - Enterprise Mobility Management error (iOS only)
+- `play_services_not_available` - Play services not available (Android only)
+- `parsing_error` - Failed to parse Google ID token (Android only)
 
 ## Troubleshooting
 

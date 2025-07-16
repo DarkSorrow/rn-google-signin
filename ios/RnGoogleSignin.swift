@@ -30,8 +30,14 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
         }
         
         guard let finalClientId = clientId else {
-            // Throw an error if no client ID is found
-            fatalError("No client ID found. Please provide iosClientId, webClientId, or ensure GoogleService-Info.plist is present.")
+            // Configuration error - but we can't reject since this is not a Promise-based function
+            // The error will be handled when trying to use the module
+            return
+        }
+        
+        if finalClientId.isEmpty {
+            // Configuration error - but we can't reject since this is not a Promise-based function
+            return
         }
         
         // Configure Google Sign In with modern approach
@@ -70,7 +76,7 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
         
         DispatchQueue.main.async {
             guard let presentingViewController = self.getCurrentViewController() else {
-                reject("no_view_controller", "No presenting view controller available", nil)
+                reject("no_activity", "No current activity available", nil)
                 return
             }
             
@@ -103,7 +109,21 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
         
         GIDSignIn.sharedInstance.restorePreviousSignIn { [weak self] user, error in
             if let error = error {
-                reject("sign_in_error", "Silent sign in failed: \(error.localizedDescription)", error)
+                let nsError = error as NSError
+                let code = nsError.code
+                
+                switch code {
+                case GIDSignInError.hasNoAuthInKeychain.rawValue:
+                    reject("sign_in_required", "No previous sign in found", error)
+                case GIDSignInError.keychain.rawValue:
+                    reject("keychain_error", "Keychain error occurred", error)
+                case GIDSignInError.network.rawValue:
+                    reject("network_error", "Network error occurred", error)
+                case GIDSignInError.notInKeychain.rawValue:
+                    reject("sign_in_required", "No previous sign in found", error)
+                default:
+                    reject("sign_in_error", "Silent sign in failed: \(error.localizedDescription)", error)
+                }
                 return
             }
             
@@ -139,7 +159,19 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
             
             currentUser.addScopes(scopes, presenting: presentingViewController) { [weak self] user, error in
                 if let error = error {
-                    reject("add_scopes_error", "Failed to add scopes: \(error.localizedDescription)", error)
+                    let nsError = error as NSError
+                    let code = nsError.code
+                    
+                    switch code {
+                    case GIDSignInError.canceled.rawValue:
+                        reject("sign_in_cancelled", "User cancelled adding scopes", error)
+                    case GIDSignInError.scopes.rawValue:
+                        reject("scopes_error", "Scope error occurred", error)
+                    case GIDSignInError.network.rawValue:
+                        reject("network_error", "Network error occurred", error)
+                    default:
+                        reject("add_scopes_error", "Failed to add scopes: \(error.localizedDescription)", error)
+                    }
                     return
                 }
                 
@@ -167,7 +199,17 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
     func revokeAccess(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         GIDSignIn.sharedInstance.disconnect { error in
             if let error = error {
-                reject("revoke_error", "Failed to revoke access: \(error.localizedDescription)", error)
+                let nsError = error as NSError
+                let code = nsError.code
+                
+                switch code {
+                case GIDSignInError.network.rawValue:
+                    reject("network_error", "Network error occurred", error)
+                case GIDSignInError.unknown.rawValue:
+                    reject("unknown_error", "Unknown error occurred", error)
+                default:
+                    reject("revoke_error", "Failed to revoke access: \(error.localizedDescription)", error)
+                }
                 return
             }
             resolve(nil)
@@ -210,13 +252,23 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
         
         currentUser.refreshTokensIfNeeded { user, error in
             if let error = error {
-                reject("token_error", "Failed to get tokens: \(error.localizedDescription)", error)
+                let nsError = error as NSError
+                let code = nsError.code
+                
+                switch code {
+                case GIDSignInError.network.rawValue:
+                    reject("network_error", "Network error occurred", error)
+                case GIDSignInError.keychain.rawValue:
+                    reject("keychain_error", "Keychain error occurred", error)
+                default:
+                    reject("token_error", "Failed to get tokens: \(error.localizedDescription)", error)
+                }
                 return
             }
             
             guard let user = user,
                   let accessToken = user.accessToken.tokenString else {
-                reject("token_error", "Failed to get access token", nil)
+                reject("token_error", "No ID token available", nil)
                 return
             }
             
@@ -243,6 +295,18 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
                 reject("emm_error", "Enterprise Mobility Management error", error)
             case GIDSignInError.unknown.rawValue:
                 reject("unknown_error", "Unknown error occurred", error)
+            case GIDSignInError.hasNoAuthInKeychain.rawValue:
+                reject("no_credential", "No credential available", error)
+            case GIDSignInError.keychain.rawValue:
+                reject("keychain_error", "Keychain error occurred", error)
+            case GIDSignInError.network.rawValue:
+                reject("network_error", "Network error occurred", error)
+            case GIDSignInError.notInKeychain.rawValue:
+                reject("not_in_keychain", "User not found in keychain", error)
+            case GIDSignInError.scopes.rawValue:
+                reject("scopes_error", "Scope error occurred", error)
+            case GIDSignInError.userCanceled.rawValue:
+                reject("sign_in_cancelled", "User cancelled the sign in", error)
             default:
                 reject("sign_in_error", "Sign in failed: \(error.localizedDescription)", error)
             }

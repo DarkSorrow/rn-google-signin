@@ -28,6 +28,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.security.SecureRandom
 import java.util.Base64
+import androidx.credentials.exceptions.GoogleIdTokenParsingException
 
 @ReactModule(name = RNGoogleSigninModule.NAME)
 class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
@@ -55,19 +56,20 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
     // MARK: - Configuration
 
-    override fun configure(config: ReadableMap, promise: Promise) {
+    override fun configure(config: ReadableMap) {
         try {
             webClientId = when {
                 config.hasKey("webClientId") -> config.getString("webClientId")
                 config.hasKey("androidClientId") -> config.getString("androidClientId")
                 else -> {
-                    promise.reject("configuration_error", "webClientId or androidClientId is required")
+                    // Configuration error - but we can't reject since this is not a Promise-based function
+                    // The error will be handled when trying to use the module
                     return
                 }
             }
 
             if (webClientId.isNullOrEmpty()) {
-                promise.reject("configuration_error", "Client ID cannot be empty")
+                // Configuration error - but we can't reject since this is not a Promise-based function
                 return
             }
 
@@ -105,10 +107,10 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             credentialManager = CredentialManager.create(reactContext)
 
             isConfigured = true
-            promise.resolve(null)
 
         } catch (e: Exception) {
-            promise.reject("configuration_error", "Failed to configure Google Sign In: ${e.message}", e)
+            // Configuration error - but we can't reject since this is not a Promise-based function
+            // The error will be handled when trying to use the module
         }
     }
 
@@ -189,11 +191,25 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                         promise.reject("sign_in_error", "Sign in failed: No credential returned")
                     }
                 } catch (e: GetCredentialException) {
-                    if (e.type == GetCredentialException.ERROR_TYPE_USER_CANCELED) {
-                        promise.reject("sign_in_cancelled", "User cancelled the sign in")
-                    } else {
-                        promise.reject("sign_in_error", "Sign in failed: ${e.message}", e)
+                    when (e.type) {
+                        GetCredentialException.ERROR_TYPE_USER_CANCELED -> {
+                            promise.reject("sign_in_cancelled", "User cancelled the sign in")
+                        }
+                        GetCredentialException.ERROR_TYPE_NO_CREDENTIAL -> {
+                            promise.reject("no_credential", "No credential available")
+                        }
+                        GetCredentialException.ERROR_TYPE_QUERY_CANCELED -> {
+                            promise.reject("sign_in_cancelled", "User cancelled the sign in")
+                        }
+                        GetCredentialException.ERROR_TYPE_UNKNOWN -> {
+                            promise.reject("unknown_error", "Unknown error occurred")
+                        }
+                        else -> {
+                            promise.reject("sign_in_error", "Sign in failed: ${e.message}", e)
+                        }
                     }
+                } catch (e: GoogleIdTokenParsingException) {
+                    promise.reject("parsing_error", "Failed to parse Google ID token: ${e.message}", e)
                 } catch (e: Exception) {
                     promise.reject("sign_in_error", "Sign in failed: ${e.message}", e)
                 }
@@ -531,6 +547,21 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                 }
                 com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.SIGN_IN_FAILED -> {
                     promise?.reject("sign_in_failed", "Sign in failed")
+                }
+                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.SIGN_IN_REQUIRED -> {
+                    promise?.reject("sign_in_required", "Sign in required")
+                }
+                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.INVALID_ACCOUNT -> {
+                    promise?.reject("invalid_account", "Invalid account")
+                }
+                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.NETWORK_ERROR -> {
+                    promise?.reject("network_error", "Network error")
+                }
+                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.INTERNAL_ERROR -> {
+                    promise?.reject("internal_error", "Internal error")
+                }
+                com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes.DEVELOPER_ERROR -> {
+                    promise?.reject("developer_error", "Developer error")
                 }
                 else -> {
                     promise?.reject("sign_in_error", "Sign in failed with code: ${e.statusCode}")
