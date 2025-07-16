@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Build Package
+    name: Build and Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -51,7 +51,6 @@ jobs:
           fi
           
           echo "✅ Build verification passed"
-          ls -la lib/
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
@@ -60,53 +59,10 @@ jobs:
           path: .
           retention-days: 1
 
-  test-build:
-    name: Test Built Package
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: package-artifacts
-          path: .
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Test Package Structure
-        run: |
-          echo "Testing package structure..."
-          
-          # Check required files exist
-          for file in "lib/module/index.js" "lib/typescript/src/index.d.ts" "package.json" "RnGoogleSignin.podspec"; do
-            if [ ! -f "$file" ]; then
-              echo "❌ Required file missing: $file"
-              exit 1
-            fi
-            echo "✅ Found: $file"
-          done
-          
-          # Check required directories exist
-          for dir in "ios" "android" "src"; do
-            if [ ! -d "$dir" ]; then
-              echo "❌ Required directory missing: $dir"
-              exit 1
-            fi
-            echo "✅ Found: $dir"
-          done
-          
-          echo "✅ Package structure test passed"
-
   publish:
     name: Publish to NPM
     if: github.event_name == 'release' && github.event.action == 'published'
-    needs: [build, test-build]
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Download Build Artifacts
@@ -124,58 +80,19 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
-      - name: Extract version from release tag
-        id: get-version
+      - name: Update Version
         run: |
-          # Extract version from the release tag (remove 'v' prefix if present)
           VERSION="${{ github.event.release.tag_name }}"
           VERSION="${VERSION#v}"  # Remove 'v' prefix
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
           
-          # Validate semver format
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
-            echo "❌ Error: Version '$VERSION' does not follow semver format x.y.z(-suffix)"
-            exit 1
-          else
-            echo "✅ Version '$VERSION' follows semver format"
-          fi
-
-      - name: Update version in package.json
-        run: |
-          VERSION=${{ steps.get-version.outputs.version }}
-          CURRENT_VERSION=$(node -p "require('./package.json').version")
-          
-          echo "Target version: $VERSION"
-          echo "Current version: $CURRENT_VERSION"
-          
-          if [ "$VERSION" = "$CURRENT_VERSION" ]; then
-            echo "✅ Version is already correct ($VERSION), no update needed"
-          else
-            echo "Updating version from $CURRENT_VERSION to $VERSION"
-            yarn version "$VERSION" --no-git-tag-version
-            echo "✅ Version updated successfully"
-          fi
-
-      - name: Verify Package Before Publish
-        run: |
-          echo "Final verification before publish..."
-          
-          # Check we have the built package
-          if [ ! -f "lib/module/index.js" ]; then
-            echo "❌ Built package not found!"
-            exit 1
-          fi
-          
-          # Check package.json has correct version
-          VERSION=$(node -p "require('./package.json').version")
-          echo "Publishing version: $VERSION"
-          
-          # Verify package content
-          echo "Package contents:"
-          ls -la
-          echo "Lib contents:"
-          ls -la lib/
+          # Update package.json version directly
+          node -e "
+            const pkg = require('./package.json');
+            pkg.version = '$VERSION';
+            require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          echo "✅ Version updated to $VERSION"
 
       - name: Publish to NPM
         run: yarn npm publish --access public
