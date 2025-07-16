@@ -50,6 +50,11 @@ jobs:
             exit 1
           fi
           
+          if [ ! -f "lib/typescript/expo-plugin/index.js" ]; then
+            echo "❌ Expo plugin build failed!"
+            exit 1
+          fi
+          
           echo "✅ Build verification passed"
 
       - name: Upload Build Artifacts
@@ -92,6 +97,16 @@ jobs:
             pkg.version = '$VERSION';
             require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
+          
+          # Update version in built artifacts
+          if [ -f "lib/module/index.js" ]; then
+            sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/g" lib/module/index.js
+          fi
+          
+          if [ -f "lib/typescript/expo-plugin/index.js" ]; then
+            sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/g" lib/typescript/expo-plugin/index.js
+          fi
+          
           echo "✅ Version updated to $VERSION"
 
       - name: Publish to NPM

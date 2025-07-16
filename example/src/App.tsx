@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Text, View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import RnGoogleSignin from '@novastera-oss/rn-google-signin';
 

@@ -10,7 +10,11 @@
     "skipLibCheck": true,
     "strict": true,
     "declaration": true,
-    "outDir": "../lib/typescript/expo-plugin"
+    "outDir": "../lib/typescript/expo-plugin",
+    "composite": true,
+    "declarationMap": true,
+    "rootDir": ".",
+    "noEmit": false
   },
   "include": [
     "**/*"

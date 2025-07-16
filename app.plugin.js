@@ -13,11 +13,14 @@ function getPackageVersion() {
   }
 }
 
-// Simple plugin that doesn't interfere with the main TurboModule
-const withRNGoogleSignin = (config) => {
-  // This plugin is optional and only adds basic configuration
-  // The main functionality comes from the TurboModule itself
-  return config;
-};
+// Import the compiled expo plugin
+let withRNGoogleSignin;
+try {
+  // Try to load the compiled version first
+  withRNGoogleSignin = require('./lib/typescript/expo-plugin/index.js').default;
+} catch {
+  // Fallback to the TypeScript version if compiled version doesn't exist
+  withRNGoogleSignin = require('./expo-plugin/index.ts').default;
+}
 
 module.exports = createRunOncePlugin(withRNGoogleSignin, 'rn-google-signin-plugin', getPackageVersion()); 
