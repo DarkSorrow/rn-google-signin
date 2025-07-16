@@ -25,10 +25,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
+          cache: 'yarn'
       
       - name: Install Dependencies
-        run: npm ci
+        run: yarn install --frozen-lockfile
       
       - name: Validate package.json
         run: |
@@ -39,7 +39,7 @@ jobs:
           echo "Files included in package: $FILES"
           
           # Check for required files/directories in package.json
-          for REQUIRED in "src" "android" "ios" "plugin" "dependencies.json" "*.podspec"; do
+          for REQUIRED in "src" "android" "ios" "expo-plugin" "*.podspec"; do
             if ! echo "$FILES" | grep -q "$REQUIRED"; then
               echo "⚠️ Warning: '$REQUIRED' might be missing from package.json 'files' field"
             fi
@@ -49,8 +49,8 @@ jobs:
           CODECONFIG=$(node -p "JSON.stringify(require('./package.json').codegenConfig || {})")
           echo "Codegen configuration: $CODECONFIG"
           
-          if ! echo "$CODECONFIG" | grep -q "AppSpecs"; then
-            echo "❌ Error: Codegen config name should be 'AppSpecs'!"
+          if ! echo "$CODECONFIG" | grep -q "RnGoogleSigninSpec"; then
+            echo "❌ Error: Codegen config name should be 'RnGoogleSigninSpec'!"
             exit 1
           fi
           
@@ -59,8 +59,8 @@ jobs:
             exit 1
           fi
           
-          if ! echo "$CODECONFIG" | grep -q "src/spec"; then
-            echo "❌ Error: Codegen config jsSrcsDir should be 'src/spec'!"
+          if ! echo "$CODECONFIG" | grep -q "src"; then
+            echo "❌ Error: Codegen config jsSrcsDir should be 'src'!"
             exit 1
           fi
           
@@ -119,26 +119,26 @@ jobs:
           echo "Checking Turbo Module specification..."
           
           # Check that the spec file exists
-          if [ ! -f "src/spec/NativeGoogleSignin.ts" ]; then
+          if [ ! -f "src/NativeRnGoogleSignin.ts" ]; then
             echo "❌ Turbo Module spec file missing!"
             exit 1
           fi
           
           # Check that it exports TurboModule interface
-          if ! grep -q "extends TurboModule" "src/spec/NativeGoogleSignin.ts"; then
+          if ! grep -q "extends TurboModule" "src/NativeRnGoogleSignin.ts"; then
             echo "❌ Turbo Module spec doesn't extend TurboModule interface!"
             exit 1
           fi
           
           # Check that it uses TurboModuleRegistry.getEnforcing
-          if ! grep -q "TurboModuleRegistry.getEnforcing" "src/spec/NativeGoogleSignin.ts"; then
+          if ! grep -q "TurboModuleRegistry.getEnforcing" "src/NativeRnGoogleSignin.ts"; then
             echo "❌ Turbo Module spec doesn't use TurboModuleRegistry.getEnforcing!"
             exit 1
           fi
           
           # Check that iOS implementation is pure Turbo Module (no bridge patterns)
-          if [ -f "ios/RNGoogleSignin.mm" ]; then
-            echo "❌ iOS still has old bridge interface file (RNGoogleSignin.mm)!"
+          if [ -f "ios/RnGoogleSignin.mm" ]; then
+            echo "❌ iOS still has old bridge interface file (RnGoogleSignin.mm)!"
             exit 1
           fi
           
@@ -148,7 +148,7 @@ jobs:
   test-ios-setup:
     name: Test iOS Setup
     needs: setup
-    runs-on: macos-15  # Use macOS 14 explicitly to avoid migration issues
+    runs-on: macos-15  # Use macOS 15 explicitly to avoid migration issues
     steps:
       - name: Download Repository
         uses: actions/download-artifact@v4
@@ -158,7 +158,7 @@ jobs:
       
       - name: Restore file permissions
         run: |
-          chmod +x scripts/*.sh
+          chmod +x scripts/*.sh 2>/dev/null || true
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -171,12 +171,12 @@ jobs:
       
       - name: Test iOS Dependencies Setup
         run: |
-          # Since artifacts don't include .git directory, we need to check if submodules were already initialized
-          if [ -d "ios/third-party/GoogleSignIn-iOS" ]; then
-            echo "✅ iOS GoogleSignIn submodule already present from checkout"
+          # Check if iOS Google Sign-In submodule is present
+          if [ -d "ios_google" ]; then
+            echo "✅ iOS GoogleSignIn submodule present"
             
             # Verify the submodule has the required files
-            if [ ! -f "ios/third-party/GoogleSignIn-iOS/GoogleSignIn.podspec" ]; then
+            if [ ! -f "ios_google/GoogleSignIn.podspec" ]; then
               echo "❌ GoogleSignIn podspec not found!"
               exit 1
             fi
@@ -187,12 +187,12 @@ jobs:
             echo "✅ iOS dependencies setup script exists and is executable"
             
             # Test that the script exists and has the right content
-            if [ ! -f "./scripts/setup_ios_dependencies.sh" ]; then
+            if [ ! -f "./scripts/setup_ios_google_submodule.sh" ]; then
               echo "❌ iOS setup script not found!"
               exit 1
             fi
             
-            if ! grep -q "GoogleSignIn-iOS" "./scripts/setup_ios_dependencies.sh"; then
+            if ! grep -q "GoogleSignIn-iOS" "./scripts/setup_ios_google_submodule.sh"; then
               echo "❌ iOS setup script doesn't contain GoogleSignIn setup!"
               exit 1
             fi
@@ -203,14 +203,14 @@ jobs:
       - name: Validate iOS Podspec
         run: |
           # Check if the podspec exists and contains required sections
-          if [ ! -f "rn-google-signin.podspec" ]; then
-            echo "❌ rn-google-signin.podspec not found"
+          if [ ! -f "RnGoogleSignin.podspec" ]; then
+            echo "❌ RnGoogleSignin.podspec not found"
             exit 1
           fi
           
           # Validate podspec content
-          if grep -q "s.dependency.*GoogleSignIn" rn-google-signin.podspec && 
-             grep -q "install_modules_dependencies" rn-google-signin.podspec; then
+          if grep -q "s.dependency.*GoogleSignIn" RnGoogleSignin.podspec && 
+             grep -q "install_modules_dependencies" RnGoogleSignin.podspec; then
             echo "✅ Podspec contains required dependencies and Turbo Module setup"
           else
             echo "❌ Podspec is missing required sections"
@@ -247,35 +247,33 @@ jobs:
       - name: Validate Android Module
         run: |
           # Check Android source files exist
-          if [ ! -f "android/src/main/java/com/novastera/rngooglesignin/RNGoogleSigninModule.kt" ]; then
+          if [ ! -f "android/src/main/java/com/novastera/rngooglesignin/RnGoogleSigninModule.kt" ]; then
             echo "❌ Android module source not found!"
             exit 1
           fi
           
-          if [ ! -f "android/src/main/java/com/novastera/rngooglesignin/RNGoogleSigninPackage.kt" ]; then
+          if [ ! -f "android/src/main/java/com/novastera/rngooglesignin/RnGoogleSigninPackage.kt" ]; then
             echo "❌ Android package source not found!"
             exit 1
           fi
           
           # Check that Android package uses BaseReactPackage for Turbo Modules
-          if ! grep -q "BaseReactPackage" "android/src/main/java/com/novastera/rngooglesignin/RNGoogleSigninPackage.kt"; then
+          if ! grep -q "BaseReactPackage" "android/src/main/java/com/novastera/rngooglesignin/RnGoogleSigninPackage.kt"; then
             echo "❌ Android package doesn't use BaseReactPackage!"
             exit 1
           fi
           
           # Check that iOS doesn't use old bridge patterns
-          if grep -q "RCT_EXTERN_MODULE" "ios/RNGoogleSignin.swift" || grep -q "RCTBridgeModule" "ios/RNGoogleSignin.swift"; then
+          if grep -q "RCT_EXTERN_MODULE" "ios/RnGoogleSignin.swift" || grep -q "RCTBridgeModule" "ios/RnGoogleSignin.swift"; then
             echo "❌ iOS implementation still uses old bridge patterns!"
             exit 1
           fi
           
           # Check that iOS implements the generated spec
-          if ! grep -q "NativeGoogleSigninSpec" "ios/RNGoogleSignin.swift"; then
+          if ! grep -q "NativeRnGoogleSigninSpec" "ios/RnGoogleSignin.swift"; then
             echo "❌ iOS doesn't implement the generated Turbo Module spec!"
             exit 1
           fi
-          
-
           
           # Check build.gradle uses proper dependency management (gradle.properties or safeExtGet)
           if ! grep -q "safeExtGet" android/build.gradle; then
@@ -307,33 +305,35 @@ jobs:
         run: npm ci
       
       - name: Build Expo Plugin Only
-        run: npm run build:plugin
+        run: npm run prepare
       
       - name: Validate Plugin Build
         run: |
-          if [ ! -f "plugin/build/withGoogleSignin.js" ]; then
-            echo "❌ Expo plugin build failed!"
+          if [ ! -f "lib/module/index.js" ]; then
+            echo "❌ Module build failed!"
             exit 1
           fi
           
-          if [ ! -f "plugin/build/index.js" ]; then
-            echo "❌ Expo plugin index build failed!"
+          if [ ! -f "lib/typescript/src/index.d.ts" ]; then
+            echo "❌ TypeScript build failed!"
             exit 1
           fi
           
-          echo "✅ Expo plugin built successfully"
-          echo "Plugin build contents:"
-          ls -la plugin/build/
+          echo "✅ Module built successfully"
+          echo "Build contents:"
+          ls -la lib/
           
-          # Test that plugin exports are correct
-          echo "Testing plugin exports..."
+          # Test that module exports are correct
+          echo "Testing module exports..."
           node -e "
-            const plugin = require('./plugin/build/index.js');
-            if (!plugin.default && !plugin.withGoogleSignin) {
-              console.error('❌ Plugin exports missing!');
+            try {
+              const module = require('./lib/module/index.js');
+              console.log('✅ Module exports validated');
+              console.log('Available exports:', Object.keys(module));
+            } catch (e) {
+              console.error('❌ Module exports failed:', e.message);
               process.exit(1);
             }
-            console.log('✅ Plugin exports validated');
           "
 
   # Successful CI check
@@ -419,25 +419,25 @@ jobs:
       
       - name: Build package
         run: |
-          # Build plugin only (no react-native-builder-bob needed for Turbo Modules)
+          # Build using react-native-builder-bob
           npm run prepare
           
-          # Verify the plugin build output
-          if [ ! -d "plugin/build" ] || [ ! "$(ls -A plugin/build 2>/dev/null)" ]; then
-            echo "❌ Plugin build failed - plugin/build directory is empty or missing"
+          # Verify the build output
+          if [ ! -d "lib" ] || [ ! "$(ls -A lib 2>/dev/null)" ]; then
+            echo "❌ Build failed - lib directory is empty or missing"
             exit 1
           fi
           
           echo "✅ Build completed successfully"
-          echo "Built plugin contents:"
-          ls -la plugin/build/
+          echo "Built lib contents:"
+          ls -la lib/
       
       - name: Verify package content
         run: |
           echo "Checking files to be included in the package..."
           
           # Verify core files and directories exist
-          for REQUIRED in "src" "android" "ios" "plugin" "dependencies.json" "rn-google-signin.podspec"; do
+          for REQUIRED in "src" "android" "ios" "lib" "RnGoogleSignin.podspec"; do
             if [ ! -e "$REQUIRED" ]; then
               echo "❌ Required file/directory '$REQUIRED' is missing!"
               exit 1
@@ -447,7 +447,7 @@ jobs:
           done
           
           # Verify Turbo Module spec exists
-          if [ ! -f "src/spec/NativeGoogleSignin.ts" ]; then
+          if [ ! -f "src/NativeRnGoogleSignin.ts" ]; then
             echo "❌ Turbo Module spec file missing!"
             exit 1
           fi
@@ -455,7 +455,7 @@ jobs:
           echo "✅ Turbo Module spec verified"
           
           # Verify iOS submodule is present (should be from artifacts)
-          if [ ! -d "ios/third-party/GoogleSignIn-iOS" ]; then
+          if [ ! -d "ios_google" ]; then
             echo "⚠️ Warning: iOS GoogleSignIn submodule not found in package"
           else
             echo "✅ iOS GoogleSignIn submodule present"
