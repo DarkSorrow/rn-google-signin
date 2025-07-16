@@ -55,15 +55,12 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
     
     // MARK: - Sign In Methods
     
-    func hasPlayServices() -> Promise {
-        return Promise { resolve, reject in
-            // Always return true on iOS as Google Play Services is an Android concept
-            resolve(true)
-        }
+    func hasPlayServices(options: [String: Any]?, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+        // Always return true on iOS as Google Play Services is an Android concept
+        resolve(true)
     }
     
-    func signIn(options: [String: Any]?) -> Promise {
-        return Promise { resolve, reject in
+    func signIn(options: [String: Any]?, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
             guard isConfigured else {
                 reject("not_configured", "Google Sign In is not configured. Call configure() first.", nil)
                 return
@@ -108,8 +105,7 @@ class RnGoogleSignin: NSObject, NativeRnGoogleSigninSpec {
         }
     }
     
-    func signInSilently() -> Promise {
-        return Promise { resolve, reject in
+    func signInSilently(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
             guard isConfigured else {
                 reject("not_configured", "Google Sign In is not configured. Call configure() first.", nil)
                 return
