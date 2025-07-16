@@ -103,6 +103,18 @@ try {
 }
 ```
 
+**Important**: Due to React Native TurboModule requirements, optional parameters must always be passed, even if `undefined` or `null`:
+
+```typescript
+// ✅ Correct - always pass the parameter
+await GoogleSignin.signIn(undefined);
+await GoogleSignin.hasPlayServices(undefined);
+
+// ❌ Incorrect - will cause runtime errors
+await GoogleSignin.signIn();
+await GoogleSignin.hasPlayServices();
+```
+
 ### Security with Nonce
 
 For enhanced security, you can provide a custom nonce when signing in:
@@ -250,15 +262,20 @@ This library uses the new Google Identity library instead of the deprecated Goog
 The library provides consistent error codes across iOS and Android platforms:
 
 ```typescript
+import { GoogleSignin, GoogleSignInErrorCode } from '@novastera-oss/rn-google-signin';
+
 try {
   await GoogleSignin.signIn();
-} catch (error) {
-  switch (error.code) {
+} catch (error: any) {
+  switch (error.code as GoogleSignInErrorCode) {
     case 'sign_in_cancelled':
       // User cancelled the sign in
       break;
     case 'sign_in_required':
       // Sign in required (for silent sign in)
+      break;
+    case 'not_configured':
+      // Google Sign In is not configured
       break;
     case 'no_credential':
       // No credential available
@@ -269,9 +286,6 @@ try {
     case 'configuration_error':
       // Configuration error (missing client ID, etc.)
       break;
-    case 'not_configured':
-      // Google Sign In is not configured
-      break;
     case 'token_error':
       // Token-related error
       break;
@@ -281,8 +295,12 @@ try {
     case 'play_services_not_available':
       // Play services not available (Android only)
       break;
+    case 'internal_error':
+      // Internal error
+      break;
     default:
-      // Handle other errors
+      // Handle other error codes
+      console.error('Unknown error:', error.code);
       break;
   }
 }

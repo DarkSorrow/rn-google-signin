@@ -9,8 +9,8 @@ import java.util.HashMap
 
 class RnGoogleSigninPackage : BaseReactPackage() {
   override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
-    return if (name == RnGoogleSigninModule.NAME) {
-      RnGoogleSigninModule(reactContext)
+    return if (name == RNGoogleSigninModule.NAME) {
+      RNGoogleSigninModule(reactContext)
     } else {
       null
     }
@@ -19,9 +19,9 @@ class RnGoogleSigninPackage : BaseReactPackage() {
   override fun getReactModuleInfoProvider(): ReactModuleInfoProvider {
     return ReactModuleInfoProvider {
       val moduleInfos: MutableMap<String, ReactModuleInfo> = HashMap()
-      moduleInfos[RnGoogleSigninModule.NAME] = ReactModuleInfo(
-        RnGoogleSigninModule.NAME,
-        RnGoogleSigninModule.NAME,
+      moduleInfos[RNGoogleSigninModule.NAME] = ReactModuleInfo(
+        RNGoogleSigninModule.NAME,
+        RNGoogleSigninModule.NAME,
         false,  // canOverrideExistingModule
         false,  // needsEagerInit
         false,  // isCxxModule

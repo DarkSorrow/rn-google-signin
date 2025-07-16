@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Text, View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import RnGoogleSignin from '@novastera-oss/rn-google-signin';
+import type { GoogleSignInErrorCode } from '@novastera-oss/rn-google-signin';
 
 export default function App() {
   const [isSignedIn, setIsSignedIn] = useState(false);
@@ -39,13 +40,27 @@ export default function App() {
 
   const signIn = async () => {
     try {
-      const result = await RnGoogleSignin.signIn();
+      const result = await RnGoogleSignin.signIn(null);
       setUser(result.user);
       setIsSignedIn(true);
       Alert.alert('Success', 'Signed in successfully!');
     } catch (error: any) {
       console.error('Sign in error:', error);
-      Alert.alert('Error', error.message || 'Sign in failed');
+      const errorCode = error.code as GoogleSignInErrorCode;
+      switch (errorCode) {
+        case 'sign_in_cancelled':
+          Alert.alert('Cancelled', 'Sign in was cancelled');
+          break;
+        case 'not_configured':
+          Alert.alert('Error', 'Google Sign In is not configured');
+          break;
+        case 'play_services_not_available':
+          Alert.alert('Error', 'Google Play Services not available');
+          break;
+        default:
+          Alert.alert('Error', error.message || 'Sign in failed');
+          break;
+      }
     }
   };
 
@@ -71,6 +86,16 @@ export default function App() {
     }
   };
 
+  const checkPlayServices = async () => {
+    try {
+      const hasServices = await RnGoogleSignin.hasPlayServices(null);
+      Alert.alert('Play Services', hasServices ? 'Available' : 'Not available');
+    } catch (error: any) {
+      console.error('Play services check error:', error);
+      Alert.alert('Error', error.message || 'Failed to check Play Services');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Google Sign-In Turbo Module</Text>
@@ -86,6 +111,10 @@ export default function App() {
           
           <TouchableOpacity style={styles.button} onPress={getTokens}>
             <Text style={styles.buttonText}>Get Tokens</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.button} onPress={checkPlayServices}>
+            <Text style={styles.buttonText}>Check Play Services</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={[styles.button, styles.signOutButton]} onPress={signOut}>

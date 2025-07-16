@@ -10,6 +10,7 @@ export type {
   SignInResponse,
   SignInSilentlyResponse,
   GetTokensResponse,
+  GoogleSignInErrorCode,
 } from './NativeRnGoogleSignin';
 
 // Export the module as default

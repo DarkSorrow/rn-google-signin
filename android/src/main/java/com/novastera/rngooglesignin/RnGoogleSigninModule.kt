@@ -9,7 +9,7 @@ import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.CredentialManagerCallback
-import androidx.credentials.ClearCredentialException
+import androidx.credentials.exceptions.ClearCredentialException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.CustomCredential
 import com.facebook.react.bridge.*
@@ -23,12 +23,12 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.security.SecureRandom
 import java.util.Base64
-import androidx.credentials.exceptions.GoogleIdTokenParsingException
 
 @ReactModule(name = RNGoogleSigninModule.NAME)
 class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
@@ -84,10 +84,10 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                 .requestProfile()
 
             if (offlineAccess) {
-                gsoBuilder.requestServerAuthCode(webClientId, forceCodeForRefreshToken)
+                gsoBuilder.requestServerAuthCode(webClientId!!, forceCodeForRefreshToken)
             }
 
-            gsoBuilder.requestIdToken(webClientId)
+            gsoBuilder.requestIdToken(webClientId!!)
 
             // Add custom scopes
             defaultScopes.forEach { scope ->
@@ -153,8 +153,14 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
         // Use Credential Manager for modern sign-in if no custom scopes
         if (defaultScopes.isEmpty()) {
+            val currentWebClientId = webClientId
+            if (currentWebClientId == null) {
+                promise.reject("not_configured", "Google Sign In is not configured. Call configure() first.")
+                return
+            }
+            
             val googleIdOption = GetGoogleIdOption.Builder()
-                .setServerClientId(webClientId!!)
+                .setServerClientId(currentWebClientId)
                 .setFilterByAuthorizedAccounts(false)
                 .setAutoSelectEnabled(false)
                 .setNonce(nonce)
@@ -165,7 +171,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
             CoroutineScope(Dispatchers.Main).launch {
                 try {
-                    val result = credentialManager?.getCredential(request, activity)
+                    val result = credentialManager?.getCredential(reactContext, request)
                     val credential = result?.credential
                     if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                         val idTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
@@ -191,18 +197,13 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                         promise.reject("sign_in_error", "Sign in failed: No credential returned")
                     }
                 } catch (e: GetCredentialException) {
-                    when (e.type) {
-                        GetCredentialException.ERROR_TYPE_USER_CANCELED -> {
+                    // Handle different types of credential exceptions
+                    when {
+                        e.message?.contains("cancel", ignoreCase = true) == true -> {
                             promise.reject("sign_in_cancelled", "User cancelled the sign in")
                         }
-                        GetCredentialException.ERROR_TYPE_NO_CREDENTIAL -> {
+                        e.message?.contains("no credential", ignoreCase = true) == true -> {
                             promise.reject("no_credential", "No credential available")
-                        }
-                        GetCredentialException.ERROR_TYPE_QUERY_CANCELED -> {
-                            promise.reject("sign_in_cancelled", "User cancelled the sign in")
-                        }
-                        GetCredentialException.ERROR_TYPE_UNKNOWN -> {
-                            promise.reject("unknown_error", "Unknown error occurred")
                         }
                         else -> {
                             promise.reject("sign_in_error", "Sign in failed: ${e.message}", e)
@@ -240,8 +241,14 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
         // Attempt silent sign-in with Credential Manager if no custom scopes
         if (defaultScopes.isEmpty()) {
+            val currentWebClientId = webClientId
+            if (currentWebClientId == null) {
+                promise.reject("not_configured", "Google Sign In is not configured. Call configure() first.")
+                return
+            }
+            
             val googleIdOption = GetGoogleIdOption.Builder()
-                .setServerClientId(webClientId!!)
+                .setServerClientId(currentWebClientId)
                 .setFilterByAuthorizedAccounts(true)
                 .setAutoSelectEnabled(true)
                 .setNonce(nonce)
@@ -252,7 +259,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
             CoroutineScope(Dispatchers.Main).launch {
                 try {
-                    val result = credentialManager?.getCredential(request, activity)
+                    val result = credentialManager?.getCredential(reactContext, request)
                     val credential = result?.credential
                     if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                         val idTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
@@ -331,7 +338,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                 request,
                 null,
                 Runnable::run,
-                object : CredentialManagerCallback<Void, ClearCredentialException> {
+                object : CredentialManagerCallback<Void?, ClearCredentialException> {
                     override fun onResult(result: Void?) {
                         // success
                     }
@@ -359,7 +366,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                 request,
                 null,
                 Runnable::run,
-                object : CredentialManagerCallback<Void, ClearCredentialException> {
+                object : CredentialManagerCallback<Void?, ClearCredentialException> {
                     override fun onResult(result: Void?) {
                         // success
                     }
@@ -398,8 +405,13 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             promise.resolve(false)
             return
         }
+        val currentWebClientId = webClientId
+        if (currentWebClientId == null) {
+            promise.resolve(false)
+            return
+        }
         val googleIdOption = GetGoogleIdOption.Builder()
-            .setServerClientId(webClientId!!)
+            .setServerClientId(currentWebClientId)
             .setFilterByAuthorizedAccounts(true)
             .setAutoSelectEnabled(true)
             .build()
@@ -409,7 +421,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                credentialManager?.getCredential(request, activity)
+                credentialManager?.getCredential(reactContext, request)
                 // If no exception, a credential exists
                 promise.resolve(true)
             } catch (e: GetCredentialException) {
@@ -433,8 +445,13 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             promise.resolve(null)
             return
         }
+        val currentWebClientId = webClientId
+        if (currentWebClientId == null) {
+            promise.resolve(null)
+            return
+        }
         val googleIdOption = GetGoogleIdOption.Builder()
-            .setServerClientId(webClientId!!)
+            .setServerClientId(currentWebClientId)
             .setFilterByAuthorizedAccounts(true)
             .setAutoSelectEnabled(true)
             .build()
@@ -444,7 +461,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                val result = credentialManager?.getCredential(request, activity)
+                val result = credentialManager?.getCredential(reactContext, request)
                 val credential = result?.credential
                 if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                     val idTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
