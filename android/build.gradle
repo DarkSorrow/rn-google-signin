@@ -26,7 +26,7 @@ def getExtOrIntegerDefault(name) {
 }
 
 android {
-  namespace "com.novasteraoss.rngooglesignin"
+  namespace "com.novastera.rngooglesignin"
 
   compileSdkVersion getExtOrIntegerDefault("compileSdkVersion")
 
@@ -79,5 +79,5 @@ dependencies {
 react {
   jsRootDir = file("../src/")
   libraryName = "RnGoogleSignin"
-  codegenJavaPackageName = "com.novasteraoss.rngooglesignin"
+  codegenJavaPackageName = "com.novastera.rngooglesignin"
 }

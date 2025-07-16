@@ -1,4 +1,4 @@
-package com.novasteraoss.rngooglesignin
+package com.novastera.rngooglesignin
 
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.module.annotations.ReactModule

@@ -1,0 +1,6 @@
+{
+  "name": "@novastera-oss/rn-google-signin",
+  "android": {
+    "modulesClassNames": ["com.novastera.rngooglesignin.RNGoogleSigninModule"]
+  }
+} 
