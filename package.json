@@ -32,10 +32,7 @@
     "!**/__tests__",
     "!**/__fixtures__",
     "!**/__mocks__",
-    "!**/.*",
-    "!ios/google_signin/Samples",
-    "!ios/google_signin/GoogleSignIn/Tests",
-    "!ios/google_signin/GoogleSignInSwift/Tests"
+    "!**/.*"
   ],
   "scripts": {
     "example": "yarn workspace @novastera-oss/rn-google-signin-example",

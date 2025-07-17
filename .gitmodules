@@ -1,3 +1,0 @@
-[submodule "ios/google_signin"]
-	path = ios/google_signin
-	url = https://github.com/google/GoogleSignIn-iOS.git

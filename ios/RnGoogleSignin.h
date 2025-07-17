@@ -1,8 +1,9 @@
 #import <RnGoogleSigninSpec/RnGoogleSigninSpec.h>
 
-// Forward declaration for the Swift class
-@class RnGoogleSignin;
+NS_ASSUME_NONNULL_BEGIN
 
 @interface RnGoogleSignin : NSObject <NativeRnGoogleSigninSpec>
 
 @end
+
+NS_ASSUME_NONNULL_END

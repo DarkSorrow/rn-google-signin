@@ -13,21 +13,14 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => min_ios_version_supported }
   s.source       = { :git => "https://github.com/DarkSorrow/rn-google-signin.git", :tag => "#{s.version}" }
 
-  s.source_files = "ios/**/*.{h,m,mm,cpp,swift}"
+  s.source_files = "ios/**/*.{h,m,mm,cpp}"
   s.private_header_files = "ios/**/*.h"
   
-  # Swift bridging header and module map
-  s.pod_target_xcconfig = {
-    'SWIFT_OBJC_BRIDGING_HEADER' => '$(PODS_TARGET_SRCROOT)/ios/RnGoogleSignin-Bridging-Header.h',
-    'DEFINES_MODULE' => 'YES',
-    'SWIFT_INSTALL_OBJC_HEADER' => 'NO'
-  }
-  
-  s.module_map = "ios/module.modulemap"
+  # Build as static library (default for React Native modules)
+  s.static_framework = true
 
-  # Use local Google Sign-In SDK from submodule
-  s.dependency "GoogleSignIn", :path => "ios/google_signin"
-  # Use remote GoogleSignInSwiftSupport since we can't modify the submodule
+  # Use official Google Sign-In SDK from remote repository
+  s.dependency "GoogleSignIn", "~> 9.0"
   s.dependency "GoogleSignInSwiftSupport", "~> 9.0"
 
   install_modules_dependencies(s)

@@ -1,10 +1,13 @@
 # React Native Google Sign-In
 
-A modern React Native Google Sign-In library with Turbo Modules support, built with the latest Google Identity library.
+A modern React Native Google Sign-In library with **Turbo Modules support**
+
+> **⚠️ Important**: This package requires React Native **New Architecture (TurboModules)** and does **NOT** support the legacy bridge architecture.
 
 ## Features
 
 - **Modern Google Identity Library**: Uses the latest Google Identity library with Credential Manager and AuthorizationClient
+- **New Architecture Only**: Built exclusively for React Native TurboModules (New Architecture)
 - **No Legacy Dependencies**: Completely removes deprecated Google Sign-In SDK (removed from Google Play Services in 2025)
 - **Turbo Modules**: Built with React Native's new Turbo Modules architecture for better performance
 - **TypeScript Support**: Full TypeScript support with comprehensive type definitions
@@ -13,6 +16,20 @@ A modern React Native Google Sign-In library with Turbo Modules support, built w
 - **Async/Await**: Modern Promise-based API
 - **Security**: Built-in nonce support for enhanced security
 - **Race Condition Free**: Single promise management prevents conflicts
+
+## Requirements
+
+- **React Native 0.79+** with New Architecture enabled
+- **iOS 15.1+**
+- **Android API 24+**
+- **TurboModules enabled** (`RCT_NEW_ARCH_ENABLED=1`)
+
+### Architecture Support
+
+| Architecture | Support | Notes |
+|-------------|---------|-------|
+| **New Architecture (TurboModules)** | ✅ **Fully Supported** | Primary target |
+| **Old Bridge Architecture** | ❌ **Not Supported** | Not in library scope |
 
 ## Installation
 
@@ -44,7 +61,20 @@ Add the plugin to your `app.json` or `app.config.js`:
 
 ## Setup
 
-### 1. Google Cloud Console Setup
+### 1. Enable New Architecture
+
+Ensure your React Native project has the New Architecture enabled:
+
+```bash
+# For iOS
+cd ios && RCT_NEW_ARCH_ENABLED=1 bundle exec pod install
+
+# For Android
+# Add to android/gradle.properties
+newArchEnabled=true
+```
+
+### 2. Google Cloud Console Setup
 
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select an existing one
@@ -54,11 +84,11 @@ Add the plugin to your `app.json` or `app.config.js`:
    - **Android client ID**: For Android apps
    - **iOS client ID**: For iOS apps
 
-### 2. Android Setup
+### 3. Android Setup
 
 Add your `google-services.json` file to `android/app/`.
 
-### 3. iOS Setup
+### 4. iOS Setup
 
 Add your `GoogleService-Info.plist` file to your iOS project.
 
@@ -145,6 +175,7 @@ This library uses the **modern Google Identity APIs** and completely removes the
 2. **Authorization**: Uses AuthorizationClient for scope management
 3. **No Legacy Dependencies**: Removes all deprecated Google Sign-In SDK code
 4. **Single Promise Management**: Prevents race conditions with unified promise handling
+5. **New Architecture Only**: Requires TurboModules (no bridge support)
 
 ### Migration Steps:
 
@@ -270,6 +301,7 @@ This library uses the new Google Identity library instead of the deprecated Goog
 2. **Improved Performance**: More efficient token management
 3. **Future-Proof**: Actively maintained by Google
 4. **Better Error Handling**: More specific error codes and messages
+5. **New Architecture**: Built for React Native TurboModules
 
 ### API Changes
 
@@ -359,7 +391,23 @@ The following error codes are consistent across both platforms:
 1. **"No client ID found"**: Ensure you've provided the correct client IDs in the configuration
 2. **"No activity available"**: Make sure the app is in the foreground when calling sign-in methods
 3. **"Credential manager not initialized"**: Call `configure()` before using any sign-in methods
-4. **Infinite awaits or no response**: This was fixed in v0.1.0 by separating promise handling for different authentication flows
+4. **"TurboModule not found"**: Ensure New Architecture is enabled and TurboModules are properly configured
+
+### Architecture Issues
+
+If you're getting errors related to TurboModules or the New Architecture:
+
+1. **Ensure New Architecture is enabled**:
+   ```bash
+   # iOS
+   cd ios && RCT_NEW_ARCH_ENABLED=1 bundle exec pod install
+   
+   # Android
+   # Add to android/gradle.properties
+   newArchEnabled=true
+   ```
+
+2. **Check React Native version**: This package requires React Native 0.79+
 
 ### Promise Handling
 
