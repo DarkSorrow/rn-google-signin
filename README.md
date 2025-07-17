@@ -8,14 +8,11 @@ A modern React Native Google Sign-In library with **Turbo Modules support**
 
 - **Modern Google Identity Library**: Uses the latest Google Identity library with Credential Manager and AuthorizationClient
 - **New Architecture Only**: Built exclusively for React Native TurboModules (New Architecture)
-- **No Legacy Dependencies**: Completely removes deprecated Google Sign-In SDK (removed from Google Play Services in 2025)
 - **Turbo Modules**: Built with React Native's new Turbo Modules architecture for better performance
 - **TypeScript Support**: Full TypeScript support with comprehensive type definitions
 - **Expo Plugin**: Includes an Expo config plugin for easy integration
 - **Cross-Platform**: Supports both iOS and Android
-- **Async/Await**: Modern Promise-based API
 - **Security**: Built-in nonce support for enhanced security
-- **Race Condition Free**: Single promise management prevents conflicts
 
 ## Requirements
 
