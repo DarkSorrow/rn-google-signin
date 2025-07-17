@@ -79,19 +79,24 @@ RCT_EXPORT_MODULE()
             return;
         }
         
-        // Safely handle scopes
+        // Safely handle scopes - options can be null, so treat as optional
         NSArray *scopes = nil;
-        if (options.scopes().has_value()) {
-            auto scopesVec = options.scopes().value();
-            if (!scopesVec.empty()) {
-                NSMutableArray *scopesArray = [NSMutableArray array];
-                for (NSString *scope : scopesVec) {
-                    if (scope && scope.length > 0) {
-                        [scopesArray addObject:scope];
+        
+        // Check if options is valid before accessing its properties
+        // This prevents the crash when null is passed from JavaScript
+        if (&options != nullptr) {
+            if (options.scopes().has_value()) {
+                auto scopesVec = options.scopes().value();
+                if (!scopesVec.empty()) {
+                    NSMutableArray *scopesArray = [NSMutableArray array];
+                    for (NSString *scope : scopesVec) {
+                        if (scope && scope.length > 0) {
+                            [scopesArray addObject:scope];
+                        }
                     }
-                }
-                if (scopesArray.count > 0) {
-                    scopes = scopesArray;
+                    if (scopesArray.count > 0) {
+                        scopes = scopesArray;
+                    }
                 }
             }
         }
@@ -429,7 +434,7 @@ RCT_EXPORT_MODULE()
                 resolve:(RCTPromiseResolveBlock)resolve
                  reject:(RCTPromiseRejectBlock)reject {
     @try {
-        // Always true on iOS
+        // Always true on iOS - options can be null, so treat as optional
         resolve(@YES);
     }
     @catch (NSException *exception) {

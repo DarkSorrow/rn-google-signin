@@ -49,7 +49,12 @@
   "keywords": [
     "react-native",
     "ios",
-    "android"
+    "android",
+    "google-signin",
+    "google",
+    "sign-in",
+    "signin",
+    "authentication"
   ],
   "repository": {
     "type": "git",
