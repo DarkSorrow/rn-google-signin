@@ -50,11 +50,52 @@ Add the plugin to your `app.json` or `app.config.js`:
 {
   "expo": {
     "plugins": [
-      "@novastera-oss/rn-google-signin"
+      [
+        "@novastera-oss/rn-google-signin",
+        {
+          "iosUrlScheme": "your-ios-bundle-id"
+        }
+      ]
     ]
   }
 }
 ```
+
+### Complete Expo Configuration
+
+Here's a complete example of the iOS configuration in your `app.json` or `app.config.js`:
+
+```json
+{
+  "expo": {
+    "ios": {
+      "bundleIdentifier": "com.yourcompany.yourapp",
+      "supportsTablet": true,
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.your-ios-client-id"
+            ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "com.yourcompany.yourapp"
+            ]
+          }
+        ],
+        "GIDClientID": "your-ios-client-id.apps.googleusercontent.com",
+        "UIBackgroundModes": ["fetch", "remote-notification"]
+      },
+      "entitlements": {
+        "aps-environment": "development"
+      }
+    }
+  }
+}
+```
+
+**Note**: Replace `your-ios-bundle-id` with your actual iOS bundle identifier (e.g., `com.yourcompany.yourapp`). This should be a short, specific identifier for iOS sign-in.
 
 ## Setup
 
