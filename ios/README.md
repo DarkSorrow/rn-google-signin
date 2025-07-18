@@ -53,7 +53,7 @@ RnGoogleSignin.configure([
 ])
 
 // Sign in
-let result = await RnGoogleSignin.signIn()
+let result = await RnGoogleSignin.signIn(null)
 
 // Check sign-in status
 let isSignedIn = await RnGoogleSignin.isSignedIn()

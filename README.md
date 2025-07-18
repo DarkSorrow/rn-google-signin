@@ -157,12 +157,16 @@ try {
   const isSignedIn = await GoogleSignin.isSignedIn();
   
   if (!isSignedIn) {
-    // Sign in with custom nonce for security
-    const userInfo = await GoogleSignin.signIn({
+    // Sign in with default configuration
+    const userInfo = await GoogleSignin.signIn(null);
+    console.log('User info:', userInfo);
+    
+    // Or sign in with custom options
+    const userInfoWithOptions = await GoogleSignin.signIn({
       scopes: ['email', 'profile'],
       nonce: 'your-custom-nonce-for-security-validation'
     });
-    console.log('User info:', userInfo);
+    console.log('User info with options:', userInfoWithOptions);
   } else {
     // Get current user
     const currentUser = await GoogleSignin.getCurrentUser();
@@ -173,7 +177,7 @@ try {
 }
 ```
 
-**Important**: Due to React Native TurboModule requirements, optional parameters must always be passed as `null` if there is no value, `{}` could work too for objects
+**⚠️ Important**: Due to React Native TurboModule requirements, all method parameters must be explicitly passed, even when using default values.
 
 ```typescript
 // ✅ Correct - always pass the parameter
@@ -184,6 +188,8 @@ await GoogleSignin.hasPlayServices(null);
 await GoogleSignin.signIn();
 await GoogleSignin.hasPlayServices();
 ```
+
+**Note**: When using default configuration, pass `null` as the parameter. When using custom options, pass an object with the desired configuration.
 
 ### Security with Nonce
 
@@ -203,53 +209,36 @@ const userInfo = await GoogleSignin.signIn({
 
 If no nonce is provided, the library will generate one automatically.
 
-## Migration from Legacy Google Sign-In
+## Platform-Specific Features
 
-This library uses the **modern Google Identity APIs** and completely removes the deprecated Google Sign-In SDK. According to [Google's migration documentation](https://developer.android.com/identity/sign-in/legacy-gsi-migration), Google Sign-In for Android is deprecated and will be removed from Google Play Services Auth SDK in 2025.
+### iOS Features
+- **Full Scope Support**: iOS supports adding additional scopes after sign-in using `addScopes()`
+- **Token Management**: Full access to access tokens and ID tokens
+- **User Profile**: Complete user profile information including photos
 
-### Key Changes:
+### Android Features
+- **Modern Credential Manager**: Uses Google's latest Credential Manager API
+- **Basic Authentication**: Focused on core sign-in functionality
+- **Limited Scope Support**: Android implementation uses Credential Manager which has limited scope support
 
-1. **Authentication**: Uses Credential Manager instead of GoogleSignInClient
-2. **Authorization**: Uses AuthorizationClient for scope management
-3. **No Legacy Dependencies**: Removes all deprecated Google Sign-In SDK code
-4. **Single Promise Management**: Prevents race conditions with unified promise handling
-5. **New Architecture Only**: Requires TurboModules (no bridge support)
+### Cross-Platform Compatibility
 
-### Migration Steps:
+The library provides a unified API across both platforms, but some features have platform-specific limitations:
 
-1. Replace the import:
-   ```typescript
-   // Previous (using deprecated modules)
-   import { GoogleSignIn } from '@react-native-google-signin/google-signin';
-   
-   // New (using modern Google Identity APIs)
-   import GoogleSignin from '@novastera-oss/rn-google-signin';
-   ```
+```typescript
+// ✅ Works on both platforms
+await GoogleSignin.signIn(null);
+await GoogleSignin.isSignedIn();
+await GoogleSignin.getCurrentUser();
 
-2. Update configuration (simplified):
-   ```typescript
-   // Previous (legacy)
-   await GoogleSignIn.configure({
-     webClientId: 'your-client-id',
-     offlineAccess: true, // No longer needed
-     scopes: ['email', 'profile'] // Use addScopes() instead
-   });
-   
-   // New (modern)
-   await GoogleSignin.configure({
-     webClientId: 'your-client-id',
-   });
-   ```
+// ✅ iOS only - adding scopes after sign-in
+const result = await GoogleSignin.addScopes([
+  'https://www.googleapis.com/auth/drive.readonly'
+]);
 
-3. Request scopes when needed:
-   ```typescript
-   // Request additional scopes when user performs an action
-   const scopeResult = await GoogleSignin.addScopes([
-     'https://www.googleapis.com/auth/drive.readonly'
-   ]);
-   ```
-
-**Note**: This library provides a clean, modern implementation using Google's current recommended APIs. It's future-proof and follows Google's latest authentication best practices.
+// ⚠️ Android - addScopes() is not supported
+// Will throw "not_supported" error on Android
+```
 
 ### Silent Sign In
 
@@ -291,17 +280,17 @@ try {
 
 ```typescript
 interface ConfigureParams {
-  webClientId?: string;
-  androidClientId?: string;
-  iosClientId?: string;
-  scopes?: string[];
-  offlineAccess?: boolean;
-  hostedDomain?: string;
-  forceCodeForRefreshToken?: boolean;
-  accountName?: string;
-  googleServicePlistPath?: string;
-  openIdRealm?: string;
-  profileImageSize?: number;
+  webClientId?: string;        // Required for Android, optional for iOS
+  androidClientId?: string;     // Alternative to webClientId for Android
+  iosClientId?: string;         // iOS-specific client ID
+  scopes?: string[];           // Initial scopes (iOS only)
+  offlineAccess?: boolean;      // Not used in current implementation
+  hostedDomain?: string;        // Not used in current implementation
+  forceCodeForRefreshToken?: boolean; // Not used in current implementation
+  accountName?: string;         // Not used in current implementation
+  googleServicePlistPath?: string; // Not used in current implementation
+  openIdRealm?: string;        // Not used in current implementation
+  profileImageSize?: number;    // Not used in current implementation
 }
 ```
 
@@ -329,25 +318,6 @@ interface SignInResponse {
 }
 ```
 
-## Migration from Old Google Sign-In SDK
-
-This library uses the new Google Identity library instead of the deprecated Google Sign-In SDK. Key differences:
-
-### Benefits of New Library
-
-1. **Better Security**: Uses modern authentication standards
-2. **Improved Performance**: More efficient token management
-3. **Future-Proof**: Actively maintained by Google
-4. **Better Error Handling**: More specific error codes and messages
-5. **New Architecture**: Built for React Native TurboModules
-
-### API Changes
-
-- `addScopes()`: Not supported in new library (scopes are requested during initial sign-in)
-- `signOut()`: No direct method (user must sign out from Google account settings)
-- `revokeAccess()`: No direct method (user must revoke from Google account settings)
-- `serverAuthCode`: Not available in new library
-
 ### Error Handling
 
 The library provides consistent error codes across iOS and Android platforms:
@@ -356,7 +326,7 @@ The library provides consistent error codes across iOS and Android platforms:
 import { GoogleSignin, GoogleSignInErrorCode } from '@novastera-oss/rn-google-signin';
 
 try {
-  await GoogleSignin.signIn();
+  await GoogleSignin.signIn(null);
 } catch (error: any) {
   switch (error.code as GoogleSignInErrorCode) {
     case 'sign_in_cancelled':
@@ -397,30 +367,26 @@ try {
 }
 ```
 
-#### Consistent Error Codes
+#### Error Codes
 
-The following error codes are consistent across both platforms:
+The following error codes are supported across platforms:
 
+**Common Error Codes:**
 - `sign_in_cancelled` - User cancelled the sign in
 - `sign_in_required` - Sign in required (for silent sign in)
 - `sign_in_error` - Generic sign in error
 - `not_configured` - Google Sign In is not configured
 - `no_activity` - No current activity available
-- `client_error` - Google Sign In client not initialized
-- `token_error` - Token-related error
-- `add_scopes_error` - Failed to add scopes
-- `revoke_error` - Failed to revoke access
-- `configuration_error` - Configuration error
-- `conversion_error` - Failed to convert user data
 - `no_credential` - No credential available
-- `unknown_error` - Unknown error occurred
 - `network_error` - Network error
-- `keychain_error` - Keychain error (iOS only)
-- `not_in_keychain` - User not found in keychain (iOS only)
-- `scopes_error` - Scope error occurred (iOS only)
-- `emm_error` - Enterprise Mobility Management error (iOS only)
+- `unknown_error` - Unknown error occurred
+
+**Platform-Specific Error Codes:**
 - `play_services_not_available` - Play services not available (Android only)
 - `parsing_error` - Failed to parse Google ID token (Android only)
+- `not_supported` - Feature not supported (Android only, for addScopes)
+- `invalid_scopes` - Invalid scopes provided (iOS only)
+- `native_crash` - Native code crashed (iOS only)
 
 ## Troubleshooting
 
@@ -428,8 +394,9 @@ The following error codes are consistent across both platforms:
 
 1. **"No client ID found"**: Ensure you've provided the correct client IDs in the configuration
 2. **"No activity available"**: Make sure the app is in the foreground when calling sign-in methods
-3. **"Credential manager not initialized"**: Call `configure()` before using any sign-in methods
+3. **"Google Sign In is not configured"**: Call `configure()` before using any sign-in methods
 4. **"TurboModule not found"**: Ensure New Architecture is enabled and TurboModules are properly configured
+5. **"Feature not supported"**: Some features like `addScopes()` are only available on iOS
 
 ### Architecture Issues
 
@@ -449,24 +416,25 @@ If you're getting errors related to TurboModules or the New Architecture:
 
 ### Promise Handling
 
-The library uses separate promise handling for different authentication flows to prevent race conditions:
+The library uses unified promise handling to prevent race conditions:
 
-- **Credential Manager flow**: Used for simple sign-ins without custom scopes
-- **Google Sign-In SDK flow**: Used for sign-ins with custom scopes or offline access
-
-Each flow has its own promise management to prevent conflicts and infinite awaits.
+- **Single Promise Management**: Only one authentication operation can be active at a time
+- **Automatic Cancellation**: New requests automatically cancel previous pending operations
+- **Error Handling**: Comprehensive error handling with platform-specific error codes
 
 ### Android Issues
 
 - Ensure `google-services.json` is properly placed in `android/app/`
 - Check that your package name matches the one in Google Cloud Console
 - Verify that Google Play Services is available on the device
+- Note: `addScopes()` is not supported on Android due to Credential Manager limitations
 
 ### iOS Issues
 
 - Ensure `GoogleService-Info.plist` is added to your iOS project
 - Check that your bundle identifier matches the one in Google Cloud Console
 - Verify that the Google Sign-In capability is enabled in your app
+- For additional scopes, use `addScopes()` after initial sign-in
 
 ## Contributing
 
