@@ -44,7 +44,26 @@ yarn add @novastera-oss/rn-google-signin
 npx expo install @novastera-oss/rn-google-signin
 ```
 
-Add the plugin to your `app.json` or `app.config.js`:
+#### GoogleService-Info.plist and google-services.json
+
+- **Both files are optional for this library.**
+- If you provide `iosClientId` (iOS) and `webClientId` or `androidClientId` (Android) directly in your configuration, you do **not** need to add these files.
+- If you do **not** provide a client ID on iOS, the native code will look for `GoogleService-Info.plist` in your project and extract the `CLIENT_ID` from it.
+- On Android, the sign-in module does **not** parse `google-services.json` directly, but the file is required for other Google/Firebase services (e.g., push, analytics).
+
+#### Expo Plugin Modes
+
+- **Automatic Mode (default, no options):**
+  - Uses Expo's Firebase plugins to automatically handle `google-services.json` (Android) and `GoogleService-Info.plist` (iOS).
+  - These files are copied and configured automatically if present.
+- **Manual Mode (when you provide options, e.g., `iosUrlScheme`):**
+  - Only adds the URL scheme to iOS Info.plist.
+  - Does not handle or copy any files automatically.
+  - You must manually add `GoogleService-Info.plist` to your iOS project if needed.
+
+#### Manual Mode
+
+Add the plugin with options to your `app.json` or `app.config.js`:
 
 ```json
 {
@@ -53,7 +72,7 @@ Add the plugin to your `app.json` or `app.config.js`:
       [
         "@novastera-oss/rn-google-signin",
         {
-          "iosUrlScheme": "your-ios-bundle-id"
+          "iosUrlScheme": "com.googleusercontent.apps.your-ios-client-id"
         }
       ]
     ]
@@ -61,7 +80,11 @@ Add the plugin to your `app.json` or `app.config.js`:
 }
 ```
 
-### Complete Expo Configuration
+**Requirements for Manual Mode:**
+- The plugin only adds URL schemes, no file handling
+- If you don't provide client IDs in your configuration, you must manually add `GoogleService-Info.plist` to your iOS project
+
+**Complete Manual Configuration Example:**
 
 Here's a complete example of the iOS configuration in your `app.json` or `app.config.js`:
 
@@ -95,7 +118,27 @@ Here's a complete example of the iOS configuration in your `app.json` or `app.co
 }
 ```
 
-**Note**: Replace `your-ios-bundle-id` with your actual iOS bundle identifier (e.g., `com.yourcompany.yourapp`). This should be a short, specific identifier for iOS sign-in.
+**Note**: Replace `your-ios-client-id` with your actual iOS client ID from Google Cloud Console.
+
+#### Automatic Mode
+
+Add the plugin without options to your `app.json` or `app.config.js`:
+
+```json
+{
+  "expo": {
+    "plugins": [
+      "@novastera-oss/rn-google-signin"
+      // ... other plugins
+    ]
+  }
+}
+```
+
+**Requirements for Automatic Mode:**
+- Place `google-services.json` in your `android/app/` folder
+- Place `GoogleService-Info.plist` in your iOS project
+- The plugin will automatically handle these files
 
 ## Setup
 
