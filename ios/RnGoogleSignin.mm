@@ -79,33 +79,51 @@ RCT_EXPORT_MODULE()
             return;
         }
         
-        // Safely handle scopes - options can be null, so treat as optional
+        // Safely handle scopes and nonce from options
         NSArray *scopes = nil;
+        NSString *nonce = nil;
         
-        // Check if options is valid before accessing its properties
-        // This prevents the crash when null is passed from JavaScript
-        if (&options != nullptr) {
-            if (options.scopes().has_value()) {
-                auto scopesVec = options.scopes().value();
-                if (!scopesVec.empty()) {
-                    NSMutableArray *scopesArray = [NSMutableArray array];
-                    for (NSString *scope : scopesVec) {
-                        if (scope && scope.length > 0) {
-                            [scopesArray addObject:scope];
+        // Simple, performant validation and access
+        @try {
+            // Basic null check for options reference
+            if (&options != nullptr) {
+                // Access nonce - returns NSString*
+                NSString *nonceValue = options.nonce();
+                if (nonceValue && nonceValue.length > 0) {
+                    nonce = nonceValue;
+                }
+                // Access scopes - returns std::optional<LazyVector<NSString*>>
+                auto scopesOptional = options.scopes();
+                if (scopesOptional.has_value()) {
+                    auto scopesVec = scopesOptional.value();
+                    if (!scopesVec.empty()) {
+                        NSMutableArray *scopesArray = [NSMutableArray array];
+                        for (NSString *scope : scopesVec) {
+                            if (scope && scope.length > 0) {
+                                [scopesArray addObject:scope];
+                            }
                         }
-                    }
-                    if (scopesArray.count > 0) {
-                        scopes = scopesArray;
+                        if (scopesArray.count > 0) {
+                            scopes = scopesArray;
+                        }
                     }
                 }
             }
+        } @catch (NSException *exception) {
+            RCTLogError(@"[RnGoogleSignin] signIn options access error: %@", exception);
+            // Continue with default values
+        }
+        
+        // Generate nonce if not provided
+        if (!nonce || nonce.length == 0) {
+            nonce = [self generateNonce];
         }
         
         // Fallback to default scopes if none provided
         if (!scopes || scopes.count == 0) {
             scopes = objc_getAssociatedObject(self, "defaultScopes");
             if (!scopes) {
-                scopes = @[@"profile", @"email"];
+                scopes = @[@"profile", @"openid"];
             }
         }
         
@@ -118,7 +136,7 @@ RCT_EXPORT_MODULE()
         
         // Perform sign in with comprehensive error handling
         [signIn signInWithPresentingViewController:presentingViewController
-                                            hint:nil
+                                            hint:nonce
                                   additionalScopes:scopes
                                         completion:^(GIDSignInResult * _Nullable result, NSError * _Nullable error) {
             if (error) {
@@ -446,23 +464,42 @@ RCT_EXPORT_MODULE()
 // MARK: - Helpers
 - (UIViewController *)getCurrentViewController {
     @try {
-        UIWindow *window = [UIApplication sharedApplication].keyWindow;
+        // Ensure we're on the main thread for UI operations
+        if (![NSThread isMainThread]) {
+            __block UIViewController *result = nil;
+            dispatch_sync(dispatch_get_main_queue(), ^{
+                result = [self getCurrentViewController];
+            });
+            return result;
+        }
+        
+        UIApplication *application = [UIApplication sharedApplication];
+        if (!application) {
+            RCTLogError(@"[RnGoogleSignin] getCurrentViewController: No UIApplication available");
+            return nil;
+        }
+        
+        UIWindow *window = application.keyWindow;
         if (!window) {
-            NSArray *windows = [UIApplication sharedApplication].windows;
-            for (UIWindow *w in windows) {
-                if (w.isKeyWindow) {
-                    window = w;
-                    break;
+            NSArray *windows = application.windows;
+            if (windows && windows.count > 0) {
+                for (UIWindow *w in windows) {
+                    if (w.isKeyWindow) {
+                        window = w;
+                        break;
+                    }
                 }
             }
         }
         
         if (!window) {
+            RCTLogError(@"[RnGoogleSignin] getCurrentViewController: No key window found");
             return nil;
         }
         
         UIViewController *rootViewController = window.rootViewController;
         if (!rootViewController) {
+            RCTLogError(@"[RnGoogleSignin] getCurrentViewController: No root view controller");
             return nil;
         }
         
@@ -471,6 +508,29 @@ RCT_EXPORT_MODULE()
     @catch (NSException *exception) {
         RCTLogError(@"[RnGoogleSignin] getCurrentViewController crashed: %@", exception);
         return nil;
+    }
+}
+
+- (NSString *)generateNonce {
+    @try {
+        NSMutableData *data = [NSMutableData dataWithLength:32];
+        int result = SecRandomCopyBytes(kSecRandomDefault, 32, data.mutableBytes);
+        if (result == 0) {
+            return [data base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength | NSDataBase64EncodingEndLineWithLineFeed];
+        } else {
+            // Fallback to arc4random if SecRandomCopyBytes fails
+            NSMutableData *fallbackData = [NSMutableData dataWithLength:32];
+            for (int i = 0; i < 32; i++) {
+                uint8_t byte = (uint8_t)arc4random_uniform(256);
+                [fallbackData replaceBytesInRange:NSMakeRange(i, 1) withBytes:&byte];
+            }
+            return [fallbackData base64EncodedStringWithOptions:NSDataBase64Encoding64CharacterLineLength | NSDataBase64EncodingEndLineWithLineFeed];
+        }
+    }
+    @catch (NSException *exception) {
+        RCTLogError(@"[RnGoogleSignin] generateNonce crashed: %@", exception);
+        // Return a simple fallback nonce
+        return @"fallback-nonce";
     }
 }
 
