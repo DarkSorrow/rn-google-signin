@@ -479,15 +479,21 @@ RCT_EXPORT_MODULE()
             return nil;
         }
         
-        UIWindow *window = application.keyWindow;
-        if (!window) {
-            NSArray *windows = application.windows;
-            if (windows && windows.count > 0) {
-                for (UIWindow *w in windows) {
-                    if (w.isKeyWindow) {
-                        window = w;
-                        break;
+        UIWindow *window = nil;
+        
+        // Use modern iOS 13+ API to get the key window
+        NSSet<UIScene *> *connectedScenes = application.connectedScenes;
+        for (UIScene *scene in connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                UIWindowScene *windowScene = (UIWindowScene *)scene;
+                if (windowScene.activationState == UISceneActivationStateForegroundActive) {
+                    for (UIWindow *w in windowScene.windows) {
+                        if (w.isKeyWindow) {
+                            window = w;
+                            break;
+                        }
                     }
+                    if (window) break;
                 }
             }
         }
