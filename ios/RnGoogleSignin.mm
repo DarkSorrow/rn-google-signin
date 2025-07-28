@@ -68,7 +68,7 @@ RCT_EXPORT_MODULE()
     }
 }
 
-- (void)signIn:(JS::NativeRnGoogleSignin::SignInParams &)options
+- (void)signIn:(NSDictionary *)options
        resolve:(RCTPromiseResolveBlock)resolve
         reject:(RCTPromiseRejectBlock)reject {
     @try {
@@ -85,27 +85,24 @@ RCT_EXPORT_MODULE()
         
         // Simple, performant validation and access
         @try {
-            // Basic null check for options reference
-            if (&options != nullptr) {
+            // Check if options is valid dictionary
+            if (options && [options isKindOfClass:[NSDictionary class]]) {
                 // Access nonce - returns NSString*
-                NSString *nonceValue = options.nonce();
-                if (nonceValue && nonceValue.length > 0) {
+                NSString *nonceValue = options[@"nonce"];
+                if (nonceValue && [nonceValue isKindOfClass:[NSString class]] && nonceValue.length > 0) {
                     nonce = nonceValue;
                 }
-                // Access scopes - returns std::optional<LazyVector<NSString*>>
-                auto scopesOptional = options.scopes();
-                if (scopesOptional.has_value()) {
-                    auto scopesVec = scopesOptional.value();
-                    if (!scopesVec.empty()) {
-                        NSMutableArray *scopesArray = [NSMutableArray array];
-                        for (NSString *scope : scopesVec) {
-                            if (scope && scope.length > 0) {
-                                [scopesArray addObject:scope];
-                            }
+                // Access scopes - returns NSArray*
+                NSArray *scopesArray = options[@"scopes"];
+                if (scopesArray && [scopesArray isKindOfClass:[NSArray class]] && scopesArray.count > 0) {
+                    NSMutableArray *validScopes = [NSMutableArray array];
+                    for (id scope in scopesArray) {
+                        if ([scope isKindOfClass:[NSString class]] && ((NSString *)scope).length > 0) {
+                            [validScopes addObject:scope];
                         }
-                        if (scopesArray.count > 0) {
-                            scopes = scopesArray;
-                        }
+                    }
+                    if (validScopes.count > 0) {
+                        scopes = validScopes;
                     }
                 }
             }
@@ -448,7 +445,7 @@ RCT_EXPORT_MODULE()
     }
 }
 
-- (void)hasPlayServices:(JS::NativeRnGoogleSignin::HasPlayServicesParams &)options
+- (void)hasPlayServices:(NSDictionary *)options
                 resolve:(RCTPromiseResolveBlock)resolve
                  reject:(RCTPromiseRejectBlock)reject {
     @try {
