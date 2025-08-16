@@ -62,7 +62,7 @@ export interface GetTokensResponse {
 /**
  * Error codes that are consistent across iOS and Android platforms
  */
-export type GoogleSignInErrorCode = 
+export type GoogleSignInErrorCode =
   | 'sign_in_cancelled'      // User cancelled the sign in
   | 'sign_in_required'       // Sign in required
   | 'sign_in_error'          // Generic sign in error
@@ -71,28 +71,30 @@ export type GoogleSignInErrorCode =
   | 'no_credential'          // No credential available
   | 'parsing_error'          // Failed to parse Google ID token (Android only)
   | 'play_services_not_available' // Play services not available (Android only)
-  | 'network_error'          // Network error
-  | 'authorization_error'    // Authorization error
+  | 'network_error'           // Network error
+  | 'authorization_error'     // Authorization error
   | 'authorization_cancelled' // User cancelled authorization
-  | 'unknown_error';         // Unknown error occurred
+  | 'unknown_error'           // Unknown error occurred
+  | 'no_valid_activity'       // No valid activity available
+  | 'ui_error'                // UI error
 
 export interface Spec extends TurboModule {
   // Configuration
   configure(config: ConfigureParams): void;
-  
+
   // Sign In
   signIn(options: SignInParams | null): Promise<SignInResponse>;
   signInSilently(): Promise<SignInSilentlyResponse>;
   addScopes(scopes: string[]): Promise<SignInResponse | null>;
-  
+
   // Sign Out
   signOut(): Promise<void>;
   revokeAccess(): Promise<void>;
-  
+
   // User State
   isSignedIn(): Promise<boolean>;
   getCurrentUser(): Promise<User | null>;
-  
+
   // Utilities
   clearCachedAccessToken(accessToken: string): Promise<void>;
   getTokens(): Promise<GetTokensResponse>;
