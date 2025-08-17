@@ -31,7 +31,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
         const val NAME = "RnGoogleSignin"
     }
 
-    private var credentialManager: CredentialManager? = null
+    // Don't store a single instance - create it dynamically
     private var isConfigured = false
     private var currentPromise: Promise? = null
     private var webClientId: String? = null
@@ -43,13 +43,53 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
     // Use WeakReference to prevent memory leaks
     private val weakReactContext = WeakReference(reactContext)
 
+    // Cache for CredentialManager to avoid recreating unnecessarily
+    private var cachedCredentialManager: CredentialManager? = null
+    private var cachedForActivity: Activity? = null
+
     init {
         reactContext.addActivityEventListener(this)
     }
 
     override fun getName(): String = NAME
 
-    // MARK: - Helper method for Activity validation
+    // MARK: - Helper Methods
+
+    /**
+     * Gets or creates a CredentialManager instance with the appropriate context.
+     * This ensures compatibility across different Android versions.
+     */
+    private fun getOrCreateCredentialManager(activity: Activity?): CredentialManager? {
+        // If we have a valid activity, always prefer using it
+        if (activity != null) {
+            // Check if we need to recreate the manager (different activity or not cached)
+            if (cachedCredentialManager == null || cachedForActivity != activity) {
+                try {
+                    // Create with activity context for better compatibility
+                    cachedCredentialManager = CredentialManager.create(activity)
+                    cachedForActivity = activity
+                } catch (e: Exception) {
+                    // Fallback to application context if activity context fails
+                    try {
+                        cachedCredentialManager = CredentialManager.create(reactContext)
+                        cachedForActivity = null
+                    } catch (e2: Exception) {
+                        return null
+                    }
+                }
+            }
+        } else if (cachedCredentialManager == null) {
+            // No activity available, try with application context
+            try {
+                cachedCredentialManager = CredentialManager.create(reactContext)
+                cachedForActivity = null
+            } catch (e: Exception) {
+                return null
+            }
+        }
+
+        return cachedCredentialManager
+    }
 
     /**
      * Validates that the current activity is available and in a valid state
@@ -72,6 +112,15 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
         return activity
     }
 
+    /**
+     * Verifies Google Play Services availability
+     */
+    private fun isGooglePlayServicesAvailable(): Boolean {
+        val googleApiAvailability = GoogleApiAvailability.getInstance()
+        val resultCode = googleApiAvailability.isGooglePlayServicesAvailable(reactContext)
+        return resultCode == ConnectionResult.SUCCESS
+    }
+
     // MARK: - Configuration
 
     override fun configure(config: ReadableMap) {
@@ -91,9 +140,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                 return
             }
 
-            // Initialize Credential Manager for modern sign-in
-            credentialManager = CredentialManager.create(reactContext)
-
+            // Don't create CredentialManager here - create it dynamically when needed
             isConfigured = true
 
         } catch (e: Exception) {
@@ -129,10 +176,23 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             return
         }
 
-        // ✅ Enhanced Activity validation
+        // Enhanced Activity validation
         val activity = getValidActivity()
         if (activity == null) {
             promise.reject("no_valid_activity", "No valid activity available for sign in")
+            return
+        }
+
+        // Check Google Play Services availability
+        if (!isGooglePlayServicesAvailable()) {
+            promise.reject("play_services_error", "Google Play Services not available. Please ensure Google Play Services is installed and up to date.")
+            return
+        }
+
+        // Get or create CredentialManager with activity context
+        val credentialManager = getOrCreateCredentialManager(activity)
+        if (credentialManager == null) {
+            promise.reject("credential_manager_error", "Failed to initialize Credential Manager")
             return
         }
 
@@ -160,10 +220,10 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             .addCredentialOption(googleIdOption)
             .build()
 
-        // Use the async version with callback instead of suspend function
+        // Use activity context for the operation
         credentialManager?.getCredentialAsync(
             request = request,
-            context = activity,
+            context = activity,  // Always use activity context
             cancellationSignal = null,
             executor = mainExecutor,
             callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
@@ -204,23 +264,23 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
                 override fun onError(e: GetCredentialException) {
                     // Handle different types of credential exceptions
-                    when {
-                        e.message?.contains("cancel", ignoreCase = true) == true -> {
-                            currentPromise?.reject("sign_in_cancelled", "User cancelled the sign in")
-                        }
-                        e.message?.contains("no credential", ignoreCase = true) == true -> {
-                            currentPromise?.reject("no_credential", "No credential available")
-                        }
-                        e.message?.contains("network", ignoreCase = true) == true -> {
-                            currentPromise?.reject("network_error", "Network error during sign in")
-                        }
-                        e.message?.contains("selector UI", ignoreCase = true) == true -> {
-                            currentPromise?.reject("ui_error", "Failed to launch selector UI. Activity may be invalid.")
-                        }
-                        else -> {
-                            currentPromise?.reject("sign_in_error", "Sign in failed: ${e.message}", e)
-                        }
+                    val errorCode = when {
+                        e.message?.contains("cancel", ignoreCase = true) == true -> "sign_in_cancelled"
+                        e.message?.contains("no credential", ignoreCase = true) == true -> "no_credential"
+                        e.message?.contains("network", ignoreCase = true) == true -> "network_error"
+                        e.message?.contains("selector UI", ignoreCase = true) == true -> "ui_error"
+                        else -> "sign_in_error"
                     }
+
+                    val errorMessage = when (errorCode) {
+                        "sign_in_cancelled" -> "User cancelled the sign in"
+                        "no_credential" -> "No Google account found. Please add a Google account in Settings > Accounts"
+                        "network_error" -> "Network error during sign in"
+                        "ui_error" -> "Failed to launch selector UI. Please try again"
+                        else -> "Sign in failed: ${e.message}"
+                    }
+
+                    currentPromise?.reject(errorCode, errorMessage, e)
                     currentPromise = null
                 }
             }
@@ -233,10 +293,17 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             return
         }
 
-        // ✅ Enhanced Activity validation
+        // Enhanced Activity validation
         val activity = getValidActivity()
         if (activity == null) {
             promise.reject("no_valid_activity", "No valid activity available for silent sign in")
+            return
+        }
+
+        // Get or create CredentialManager with activity context
+        val credentialManager = getOrCreateCredentialManager(activity)
+        if (credentialManager == null) {
+            promise.reject("credential_manager_error", "Failed to initialize Credential Manager")
             return
         }
 
@@ -261,10 +328,10 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             .addCredentialOption(googleIdOption)
             .build()
 
-        // Use the async version with callback instead of suspend function
+        // Use activity context for the operation
         credentialManager?.getCredentialAsync(
             request = request,
-            context = activity,
+            context = activity,  // Always use activity context
             cancellationSignal = null,
             executor = mainExecutor,
             callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
@@ -304,7 +371,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                 override fun onError(e: GetCredentialException) {
                     when {
                         e.message?.contains("selector UI", ignoreCase = true) == true -> {
-                            currentPromise?.reject("ui_error", "Failed to launch selector UI. Activity may be invalid.")
+                            currentPromise?.reject("ui_error", "Failed to launch selector UI")
                         }
                         else -> {
                             currentPromise?.reject("sign_in_required", "No user is currently signed in")
@@ -326,6 +393,18 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
     override fun signOut(promise: Promise) {
         // Clear Credential Manager state
+        val activity = getValidActivity()
+        val credentialManager = if (activity != null) {
+            getOrCreateCredentialManager(activity)
+        } else {
+            // Try with cached manager or create with app context
+            cachedCredentialManager ?: try {
+                CredentialManager.create(reactContext)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
         credentialManager?.let { cm ->
             val request = ClearCredentialStateRequest()
             cm.clearCredentialStateAsync(
@@ -342,11 +421,28 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                 }
             )
         }
+
+        // Clear cached manager on sign out
+        cachedCredentialManager = null
+        cachedForActivity = null
+
         promise.resolve(null)
     }
 
     override fun revokeAccess(promise: Promise) {
         // Clear Credential Manager state
+        val activity = getValidActivity()
+        val credentialManager = if (activity != null) {
+            getOrCreateCredentialManager(activity)
+        } else {
+            // Try with cached manager or create with app context
+            cachedCredentialManager ?: try {
+                CredentialManager.create(reactContext)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
         credentialManager?.let { cm ->
             val request = ClearCredentialStateRequest()
             cm.clearCredentialStateAsync(
@@ -363,6 +459,11 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                 }
             )
         }
+
+        // Clear cached manager on revoke
+        cachedCredentialManager = null
+        cachedForActivity = null
+
         promise.resolve(null)
     }
 
@@ -370,7 +471,6 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
     override fun isSignedIn(promise: Promise) {
         // Check Credential Manager
-        // ✅ Enhanced Activity validation
         val activity = getValidActivity()
         if (activity == null) {
             promise.resolve(false)
@@ -379,6 +479,13 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
         val currentWebClientId = webClientId
         if (currentWebClientId == null) {
+            promise.resolve(false)
+            return
+        }
+
+        // Get or create CredentialManager with activity context
+        val credentialManager = getOrCreateCredentialManager(activity)
+        if (credentialManager == null) {
             promise.resolve(false)
             return
         }
@@ -392,10 +499,10 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             .addCredentialOption(googleIdOption)
             .build()
 
-        // Use the async version with callback
+        // Use activity context for the operation
         credentialManager?.getCredentialAsync(
             request = request,
-            context = activity,
+            context = activity,  // Always use activity context
             cancellationSignal = null,
             executor = mainExecutor,
             callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
@@ -413,7 +520,6 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
     override fun getCurrentUser(promise: Promise) {
         // Try Credential Manager
-        // ✅ Enhanced Activity validation
         val activity = getValidActivity()
         if (activity == null) {
             promise.resolve(null)
@@ -422,6 +528,13 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
         val currentWebClientId = webClientId
         if (currentWebClientId == null) {
+            promise.resolve(null)
+            return
+        }
+
+        // Get or create CredentialManager with activity context
+        val credentialManager = getOrCreateCredentialManager(activity)
+        if (credentialManager == null) {
             promise.resolve(null)
             return
         }
@@ -435,10 +548,10 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             .addCredentialOption(googleIdOption)
             .build()
 
-        // Use the async version with callback
+        // Use activity context for the operation
         credentialManager?.getCredentialAsync(
             request = request,
-            context = activity,
+            context = activity,  // Always use activity context
             cancellationSignal = null,
             executor = mainExecutor,
             callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
@@ -487,7 +600,6 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
     override fun getTokens(promise: Promise) {
         // For modern approach, we get tokens from Credential Manager
-        // ✅ Enhanced Activity validation
         val activity = getValidActivity()
         if (activity == null) {
             promise.reject("no_valid_activity", "No valid activity available")
@@ -500,6 +612,13 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             return
         }
 
+        // Get or create CredentialManager with activity context
+        val credentialManager = getOrCreateCredentialManager(activity)
+        if (credentialManager == null) {
+            promise.reject("credential_manager_error", "Failed to initialize Credential Manager")
+            return
+        }
+
         val googleIdOption = GetGoogleIdOption.Builder()
             .setServerClientId(currentWebClientId)
             .setFilterByAuthorizedAccounts(true)
@@ -509,10 +628,10 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             .addCredentialOption(googleIdOption)
             .build()
 
-        // Use the async version with callback
+        // Use activity context for the operation
         credentialManager?.getCredentialAsync(
             request = request,
-            context = activity,
+            context = activity,  // Always use activity context
             cancellationSignal = null,
             executor = mainExecutor,
             callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
@@ -521,9 +640,12 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                         val credential = result.credential
                         if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                             val idTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                            // Return only tokens as per TypeScript interface
                             val tokens = Arguments.createMap().apply {
                                 putString("idToken", idTokenCredential.idToken)
-                                putString("accessToken", idTokenCredential.idToken) // Note: Credential Manager doesn't provide access tokens
+                                // Note: Credential Manager doesn't provide separate access tokens
+                                // so we return the idToken as accessToken for compatibility
+                                putString("accessToken", idTokenCredential.idToken)
                             }
                             promise.resolve(tokens)
                         } else {
@@ -537,7 +659,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                 override fun onError(e: GetCredentialException) {
                     when {
                         e.message?.contains("selector UI", ignoreCase = true) == true -> {
-                            promise.reject("ui_error", "Failed to launch selector UI. Activity may be invalid.")
+                            promise.reject("ui_error", "Failed to launch selector UI")
                         }
                         else -> {
                             promise.reject("sign_in_required", "No user is currently signed in")

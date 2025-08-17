@@ -19,6 +19,7 @@ A modern React Native Google Sign-In library with **Turbo Modules support**
 - **React Native 0.79+** with New Architecture enabled
 - **iOS 15.1+**
 - **Android API 24+**
+- **Google Play Services** installed and up to date (Android)
 - **TurboModules enabled** (`RCT_NEW_ARCH_ENABLED=1`)
 
 ### Architecture Support
@@ -198,12 +199,12 @@ import { GoogleSignin } from '@novastera-oss/rn-google-signin';
 try {
   // Check if user is signed in
   const isSignedIn = await GoogleSignin.isSignedIn();
-  
+
   if (!isSignedIn) {
     // Sign in with default configuration
     const userInfo = await GoogleSignin.signIn(null);
     console.log('User info:', userInfo);
-    
+
     // Or sign in with custom options
     const userInfoWithOptions = await GoogleSignin.signIn({
       scopes: ['email', 'profile'],
@@ -260,9 +261,24 @@ If no nonce is provided, the library will generate one automatically.
 - **User Profile**: Complete user profile information including photos
 
 ### Android Features
-- **Modern Credential Manager**: Uses Google's latest Credential Manager API
+- **Modern Credential Manager**: Uses Google's latest Credential Manager API (Android 14+)
+- **Android 13+ Compatibility**: Full support for Android 13 and newer versions
 - **Basic Authentication**: Focused on core sign-in functionality
 - **Limited Scope Support**: Android implementation uses Credential Manager which has limited scope support
+- **Note**: Requires Google Play Services to be installed and up to date
+
+### Platform Differences
+
+| Feature | iOS | Android | Notes |
+|---------|-----|---------|-------|
+| Basic Sign-In | ✅ | ✅ | |
+| Silent Sign-In | ✅ | ✅ | |
+| Sign Out | ✅ | ✅ | |
+| Get Current User | ✅ | ✅ | |
+| Add Scopes | ✅ | ❌ | Android: throws `not_supported` error |
+| Access Token | ✅ | ⚠️ | Android: returns same as ID token |
+| Custom Scopes in Config | ✅ | ❌ | Android: ignored |
+| Offline Access | ✅ | ❌ | Android: not supported with Credential Manager |
 
 ### Cross-Platform Compatibility
 
@@ -316,6 +332,8 @@ try {
   console.error('Get tokens error:', error);
 }
 ```
+
+**Note**: On Android, `accessToken` returns the same value as `idToken` due to Credential Manager limitations.
 
 ## API Reference
 
@@ -387,20 +405,11 @@ try {
     case 'network_error':
       // Network error occurred
       break;
-    case 'configuration_error':
-      // Configuration error (missing client ID, etc.)
-      break;
-    case 'token_error':
-      // Token-related error
-      break;
-    case 'keychain_error':
-      // Keychain error (iOS only)
-      break;
     case 'play_services_not_available':
       // Play services not available (Android only)
       break;
-    case 'internal_error':
-      // Internal error
+    case 'not_supported':
+      // Feature not supported (Android only)
       break;
     default:
       // Handle other error codes
@@ -419,17 +428,30 @@ The following error codes are supported across platforms:
 - `sign_in_required` - Sign in required (for silent sign in)
 - `sign_in_error` - Generic sign in error
 - `not_configured` - Google Sign In is not configured
-- `no_activity` - No current activity available
 - `no_credential` - No credential available
 - `network_error` - Network error
 - `unknown_error` - Unknown error occurred
 
-**Platform-Specific Error Codes:**
-- `play_services_not_available` - Play services not available (Android only)
-- `parsing_error` - Failed to parse Google ID token (Android only)
-- `not_supported` - Feature not supported (Android only, for addScopes)
-- `invalid_scopes` - Invalid scopes provided (iOS only)
-- `native_crash` - Native code crashed (iOS only)
+**Android-Specific Error Codes:**
+- `no_activity` - No current activity available
+- `no_valid_activity` - Activity is invalid or destroyed
+- `parsing_error` - Failed to parse Google ID token
+- `play_services_not_available` - Play services not available
+- `play_services_error` - Google Play Services error
+- `credential_manager_error` - Failed to initialize Credential Manager
+- `ui_error` - Failed to launch selector UI
+- `not_supported` - Feature not supported (e.g., addScopes)
+- `cancelled` - Previous operation was cancelled
+
+**iOS-Specific Error Codes:**
+- `authorization_error` - Authorization error
+- `authorization_cancelled` - User cancelled authorization
+- `invalid_scopes` - Invalid scopes provided
+- `native_crash` - Native code crashed
+- `keychain_error` - Keychain error
+- `configuration_error` - Configuration error (missing client ID, etc.)
+- `token_error` - Token-related error
+- `internal_error` - Internal error
 
 ## Troubleshooting
 
@@ -449,7 +471,7 @@ If you're getting errors related to TurboModules or the New Architecture:
    ```bash
    # iOS
    cd ios && RCT_NEW_ARCH_ENABLED=1 bundle exec pod install
-   
+
    # Android
    # Add to android/gradle.properties
    newArchEnabled=true
@@ -469,8 +491,11 @@ The library uses unified promise handling to prevent race conditions:
 
 - Ensure `google-services.json` is properly placed in `android/app/`
 - Check that your package name matches the one in Google Cloud Console
-- Verify that Google Play Services is available on the device
+- **Verify that Google Play Services is installed and up to date**
+- **For emulators**: Use an emulator with Google Play Store (not just "Google APIs")
+- **Add a Google account**: Go to Settings > Accounts and add at least one Google account
 - Note: `addScopes()` is not supported on Android due to Credential Manager limitations
+- Note: On Android, `accessToken` in `getTokens()` returns the same value as `idToken` due to Credential Manager limitations
 
 ### iOS Issues
 
