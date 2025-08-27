@@ -470,7 +470,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
     // MARK: - User State
 
     override fun isSignedIn(promise: Promise) {
-        // Check Credential Manager
+        // Check Credential Manager for existing credentials without triggering sign-in
         val activity = getValidActivity()
         if (activity == null) {
             promise.resolve(false)
@@ -490,10 +490,11 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             return
         }
 
+        // Check for existing credentials without triggering sign-in UI
         val googleIdOption = GetGoogleIdOption.Builder()
             .setServerClientId(currentWebClientId)
             .setFilterByAuthorizedAccounts(true)
-            .setAutoSelectEnabled(true)
+            .setAutoSelectEnabled(false)  // Don't auto-select, just check if credentials exist
             .build()
         val request = GetCredentialRequest.Builder()
             .addCredentialOption(googleIdOption)
@@ -502,16 +503,17 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
         // Use activity context for the operation
         credentialManager?.getCredentialAsync(
             request = request,
-            context = activity,  // Always use activity context
+            context = activity,
             cancellationSignal = null,
             executor = mainExecutor,
             callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
                 override fun onResult(result: GetCredentialResponse) {
-                    // If no exception, a credential exists
+                    // If we get a result, user has authorized credentials
                     promise.resolve(true)
                 }
 
                 override fun onError(e: GetCredentialException) {
+                    // Any error means no credentials available
                     promise.resolve(false)
                 }
             }
