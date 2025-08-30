@@ -470,50 +470,52 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
     // MARK: - User State
 
     override fun isSignedIn(promise: Promise) {
-        // Check Credential Manager for existing credentials without triggering sign-in
+        // Check if we have any configured client ID
+        val hasClientId = webClientId != null
+        if (!hasClientId) {
+            promise.resolve(false)
+            return
+        }
+
+        // Check if we have a valid activity
         val activity = getValidActivity()
         if (activity == null) {
             promise.resolve(false)
             return
         }
 
-        val currentWebClientId = webClientId
-        if (currentWebClientId == null) {
-            promise.resolve(false)
-            return
-        }
-
-        // Get or create CredentialManager with activity context
+        // Get or create CredentialManager
         val credentialManager = getOrCreateCredentialManager(activity)
         if (credentialManager == null) {
             promise.resolve(false)
             return
         }
 
-        // Check for existing credentials without triggering sign-in UI
+        // Try to get existing credentials without triggering UI
+        // Use setAutoSelectEnabled(false) to prevent automatic credential selection
         val googleIdOption = GetGoogleIdOption.Builder()
-            .setServerClientId(currentWebClientId)
+            .setServerClientId(webClientId!!)
             .setFilterByAuthorizedAccounts(true)
-            .setAutoSelectEnabled(false)  // Don't auto-select, just check if credentials exist
+            .setAutoSelectEnabled(false)  // This prevents automatic UI triggering
             .build()
+        
         val request = GetCredentialRequest.Builder()
             .addCredentialOption(googleIdOption)
             .build()
 
-        // Use activity context for the operation
-        credentialManager?.getCredentialAsync(
+        credentialManager.getCredentialAsync(
             request = request,
             context = activity,
             cancellationSignal = null,
             executor = mainExecutor,
             callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
                 override fun onResult(result: GetCredentialResponse) {
-                    // If we get a result, user has authorized credentials
+                    // If we get here, there are existing credentials
                     promise.resolve(true)
                 }
 
                 override fun onError(e: GetCredentialException) {
-                    // Any error means no credentials available
+                    // No existing credentials or error occurred
                     promise.resolve(false)
                 }
             }
