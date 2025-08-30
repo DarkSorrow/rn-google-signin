@@ -221,6 +221,8 @@ try {
 }
 ```
 
+**⚠️ Android Warning**: On Android, `isSignedIn()` may trigger the credential picker UI even when the user is already signed in. This is a limitation of Google's Credential Manager API. For better user experience on Android, consider managing sign-in state in your app instead of calling `isSignedIn()`.
+
 **⚠️ Important**: Due to React Native TurboModule requirements, all method parameters must be explicitly passed, even when using default values.
 
 ```typescript
@@ -266,6 +268,8 @@ If no nonce is provided, the library will generate one automatically.
 - **Basic Authentication**: Focused on core sign-in functionality
 - **Limited Scope Support**: Android implementation uses Credential Manager which has limited scope support
 - **Note**: Requires Google Play Services to be installed and up to date
+
+**⚠️ Important Android Limitation**: The `isSignedIn()` method on Android may trigger the credential picker UI even when the user is already signed in. This is a fundamental limitation of Google's Credential Manager API, which is designed for credential retrieval rather than passive status checking. For production Android apps, consider implementing your own sign-in state management.
 
 ### Platform Differences
 
@@ -334,6 +338,46 @@ try {
 ```
 
 **Note**: On Android, `accessToken` returns the same value as `idToken` due to Credential Manager limitations.
+
+### Android Sign-In State Management
+
+Due to the limitations of `isSignedIn()` on Android, consider implementing your own sign-in state management:
+
+```typescript
+// Store sign-in state in your app
+const [isSignedIn, setIsSignedIn] = useState(false);
+
+// After successful sign-in
+const handleSignIn = async () => {
+  try {
+    const user = await GoogleSignin.signIn(null);
+    setIsSignedIn(true);
+    // Store user data if needed
+    await AsyncStorage.setItem('googleUser', JSON.stringify(user));
+  } catch (error) {
+    setIsSignedIn(false);
+    console.error('Sign in failed:', error);
+  }
+};
+
+// Check your app's state instead of calling isSignedIn()
+const checkSignInStatus = () => {
+  return isSignedIn; // Instant response, no UI
+};
+
+// On sign out
+const handleSignOut = async () => {
+  try {
+    await GoogleSignin.signOut();
+    setIsSignedIn(false);
+    await AsyncStorage.removeItem('googleUser');
+  } catch (error) {
+    console.error('Sign out failed:', error);
+  }
+};
+```
+
+This approach provides instant responses and better user experience on Android.
 
 ## API Reference
 
@@ -496,6 +540,8 @@ The library uses unified promise handling to prevent race conditions:
 - **Add a Google account**: Go to Settings > Accounts and add at least one Google account
 - Note: `addScopes()` is not supported on Android due to Credential Manager limitations
 - Note: On Android, `accessToken` in `getTokens()` returns the same value as `idToken` due to Credential Manager limitations
+
+**⚠️ Android UI Issue**: If `isSignedIn()` is triggering the credential picker unexpectedly, this is expected behavior on Android. The Google Credential Manager API is designed to show the credential picker when checking for credentials. Consider implementing your own sign-in state management as shown in the "Android Sign-In State Management" section above.
 
 ### iOS Issues
 
