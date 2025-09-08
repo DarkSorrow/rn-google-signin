@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Text, View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import RnGoogleSignin from '@novastera-oss/rn-google-signin';
-import type { GoogleSignInErrorCode } from '@novastera-oss/rn-google-signin';
+//import type { GoogleSignInErrorCode } from '@novastera-oss/rn-google-signin';
 
 export default function App() {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [userInfo, setUserInfo] = useState<any>(null);
 
   useEffect(() => {
     // Configure Google Sign-In (synchronous)
@@ -42,7 +40,7 @@ export default function App() {
 
   const signIn = async () => {
     try {
-      setLoading(true);
+      //setLoading(true);
       console.log('Starting Google Sign In...');
       
       // Always pass an options object, even if empty
@@ -52,7 +50,6 @@ export default function App() {
       if (userInfo.idToken) {
         console.log('ID Token received:', userInfo.idToken.substring(0, 20) + '...');
         // Process the sign in
-        setUserInfo(userInfo);
       } else {
         throw new Error('No ID token received');
       }
@@ -85,7 +82,7 @@ export default function App() {
       
       Alert.alert('Sign In Error', errorMessage);
     } finally {
-      setLoading(false);
+      //setLoading(false);
     }
   };
 
@@ -104,7 +101,7 @@ export default function App() {
   const getTokens = async () => {
     try {
       const tokens = await RnGoogleSignin.getTokens();
-      Alert.alert('Tokens', `Access Token: ${tokens.accessToken.substring(0, 20)}...`);
+      Alert.alert('Tokens', `Access Token: ${tokens.accessToken?.substring(0, 20)}...` || 'N/A');
     } catch (error: any) {
       console.error('Get tokens error:', error);
       Alert.alert('Error', error.message || 'Failed to get tokens');
