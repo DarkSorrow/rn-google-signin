@@ -137,6 +137,13 @@ Add the plugin without options to your `app.json` or `app.config.js`:
 ```
 
 **Requirements for Automatic Mode:**
+
+**For Expo Projects:**
+- Place `google-services.json` in your **project root** (same level as `app.json`)
+- Place `GoogleService-Info.plist` in your **project root** (same level as `app.json`)
+- The plugin will automatically copy these files to the correct native directories during `expo prebuild`
+
+**For React Native CLI Projects:**
 - Place `google-services.json` in your `android/app/` folder
 - Place `GoogleService-Info.plist` in your iOS project
 - The plugin will automatically handle these files
@@ -168,11 +175,19 @@ newArchEnabled=true
 
 ### 3. Android Setup
 
-Add your `google-services.json` file to `android/app/`.
+**For Expo Projects:**
+- Add your `google-services.json` file to your **project root** (same level as `app.json`)
+
+**For React Native CLI Projects:**
+- Add your `google-services.json` file to `android/app/`
 
 ### 4. iOS Setup
 
-Add your `GoogleService-Info.plist` file to your iOS project.
+**For Expo Projects:**
+- Add your `GoogleService-Info.plist` file to your **project root** (same level as `app.json`)
+
+**For React Native CLI Projects:**
+- Add your `GoogleService-Info.plist` file to your iOS project
 
 ## Usage
 
