@@ -35,7 +35,7 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "yarn workspace @novastera-oss/rn-google-signin-example",
+    "example": "cd example && yarn",
     "test": "jest",
     "typecheck": "tsc --build",
     "typecheck:watch": "tsc --build --watch",
@@ -99,9 +99,6 @@
     "react": "*",
     "react-native": "*"
   },
-  "workspaces": [
-    "example"
-  ],
   "jest": {
     "preset": "react-native",
     "modulePathIgnorePatterns": [
