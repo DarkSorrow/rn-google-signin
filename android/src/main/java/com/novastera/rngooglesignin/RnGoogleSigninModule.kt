@@ -139,7 +139,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
      * Optimized with early returns and reduced API calls.
      */
     private fun getValidActivity(): Activity? {
-        val activity = currentActivity ?: return null
+        val activity = reactContext.getCurrentActivity() ?: return null
         
         // Early return for invalid states
         if (activity.isFinishing) return null
@@ -648,11 +648,12 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
     // MARK: - Activity Event Listener
 
-    override fun onActivityResult(activity: Activity?, requestCode: Int, resultCode: Int, intent: Intent?) {
+    // Implement the exact signatures required by Expo SDK 54
+    override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {
         // Not needed for modern Credential Manager approach
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         // Not needed for Google Sign In
     }
 
