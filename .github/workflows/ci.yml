@@ -83,6 +83,9 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
+      - name: Install Dependencies
+        run: yarn install --immutable
+
       - name: Update Version
         run: |
           VERSION="${{ github.event.release.tag_name }}"
@@ -108,6 +111,6 @@ jobs:
           echo "✅ Version updated to $VERSION"
 
       - name: Publish to NPM
-        run: yarn npm publish --access public
+        run: npm publish --access public
         env:
-          YARN_NPM_AUTH_TOKEN: ${{ secrets.NPM_SECRET }} 
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_SECRET }} 
