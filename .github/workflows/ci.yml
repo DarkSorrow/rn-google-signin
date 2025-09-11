@@ -83,9 +83,6 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
-      - name: Install Dependencies
-        run: yarn install --immutable
-
       - name: Update Version
         run: |
           VERSION="${{ github.event.release.tag_name }}"
