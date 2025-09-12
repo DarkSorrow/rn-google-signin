@@ -1,8 +1,5 @@
-const path = require('path');
 const { getDefaultConfig } = require('@react-native/metro-config');
-const { withMetroConfig } = require('react-native-monorepo-config');
-
-const root = path.resolve(__dirname, '..');
+const path = require('path');
 
 /**
  * Metro configuration
@@ -10,7 +7,17 @@ const root = path.resolve(__dirname, '..');
  *
  * @type {import('metro-config').MetroConfig}
  */
-module.exports = withMetroConfig(getDefaultConfig(__dirname), {
-  root,
-  dirname: __dirname,
-});
+const config = getDefaultConfig(__dirname);
+
+// Add the parent directory to the watchFolders
+config.watchFolders = [
+  path.resolve(__dirname, '..'),
+];
+
+// Add resolver configuration for the local package
+config.resolver.nodeModulesPaths = [
+  path.resolve(__dirname, 'node_modules'),
+  path.resolve(__dirname, '..', 'node_modules'),
+];
+
+module.exports = config;

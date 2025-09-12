@@ -35,7 +35,9 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "cd example && yarn",
+    "example": "cd example && npm install && npm start",
+    "example:android": "cd example && npm install && npx react-native run-android",
+    "example:ios": "cd example && npm install && npx react-native run-ios",
     "test": "jest",
     "typecheck": "tsc --build",
     "typecheck:watch": "tsc --build --watch",
