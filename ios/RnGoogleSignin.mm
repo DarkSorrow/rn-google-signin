@@ -91,17 +91,18 @@ RCT_EXPORT_MODULE()
             }
             
             // Access scopes from TurboModule struct
+            // Handle scopes safely
             if (options.scopes().has_value()) {
-                const auto& scopesVector = options.scopes().value();
-                if (scopesVector.size() > 0) {
-                    NSMutableArray *validScopes = [NSMutableArray array];
+                auto scopesVector = options.scopes().value();
+                if (!scopesVector.empty()) {
+                    NSMutableArray *scopesArray = [NSMutableArray array];
                     for (NSString *scope : scopesVector) {
                         if (scope && scope.length > 0) {
-                            [validScopes addObject:scope];
+                            [scopesArray addObject:scope];
                         }
                     }
-                    if (validScopes.count > 0) {
-                        scopes = validScopes;
+                    if (scopesArray.count > 0) {
+                        scopes = scopesArray;
                     }
                 }
             }
