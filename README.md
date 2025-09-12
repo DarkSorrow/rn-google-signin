@@ -52,6 +52,26 @@ npx expo install @novastera-oss/rn-google-signin
 - If you do **not** provide a client ID on iOS, the native code will look for `GoogleService-Info.plist` in your project and extract the `CLIENT_ID` from it.
 - On Android, the sign-in module does **not** parse `google-services.json` directly, but the file is required for other Google/Firebase services (e.g., push, analytics).
 
+**For Expo Projects:**
+- Place `google-services.json` in your **project root** (same level as `app.json`)
+- Place `GoogleService-Info.plist` in your **project root** (same level as `app.json`)
+- Reference them in your `app.json` configuration:
+
+```json
+{
+  "expo": {
+    "ios": {
+      "googleServicesFile": "./GoogleService-Info.plist"
+    },
+    "android": {
+      "googleServicesFile": "./google-services.json"
+    }
+  }
+}
+```
+
+> **Note:** You can keep the original filenames that Google provides (e.g., `client_secret_123456789-abcdefg.apps.googleusercontent.com.json`). Just update the paths in your `app.json` accordingly.
+
 #### Expo Plugin Modes
 
 - **Automatic Mode (default, no options):**
@@ -141,6 +161,7 @@ Add the plugin without options to your `app.json` or `app.config.js`:
 **For Expo Projects:**
 - Place `google-services.json` in your **project root** (same level as `app.json`)
 - Place `GoogleService-Info.plist` in your **project root** (same level as `app.json`)
+- Reference them in your `app.json` configuration (see above)
 - The plugin will automatically copy these files to the correct native directories during `expo prebuild`
 
 **For React Native CLI Projects:**
@@ -177,16 +198,11 @@ newArchEnabled=true
 
 **For Expo Projects:**
 - Add your `google-services.json` file to your **project root** (same level as `app.json`)
+- Add your `GoogleService-Info.plist` file to your **project root** (same level as `app.json`)
+- Reference them in your `app.json` configuration (see installation section above)
 
 **For React Native CLI Projects:**
 - Add your `google-services.json` file to `android/app/`
-
-### 4. iOS Setup
-
-**For Expo Projects:**
-- Add your `GoogleService-Info.plist` file to your **project root** (same level as `app.json`)
-
-**For React Native CLI Projects:**
 - Add your `GoogleService-Info.plist` file to your iOS project
 
 ## Usage
