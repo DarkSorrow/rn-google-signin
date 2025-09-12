@@ -68,7 +68,7 @@ RCT_EXPORT_MODULE()
     }
 }
 
-- (void)signIn:(NSDictionary *)options
+- (void)signIn:(JS::NativeRnGoogleSignin::SignInParams &)options
        resolve:(RCTPromiseResolveBlock)resolve
         reject:(RCTPromiseRejectBlock)reject {
     @try {
@@ -79,25 +79,24 @@ RCT_EXPORT_MODULE()
             return;
         }
         
-        // Safely handle scopes and nonce from options
+        // Safely handle scopes and nonce from TurboModule struct
         NSArray *scopes = nil;
         NSString *nonce = nil;
         
         // Simple, performant validation and access
         @try {
-            // Check if options is valid dictionary
-            if (options && [options isKindOfClass:[NSDictionary class]]) {
-                // Access nonce - returns NSString*
-                NSString *nonceValue = options[@"nonce"];
-                if (nonceValue && [nonceValue isKindOfClass:[NSString class]] && nonceValue.length > 0) {
-                    nonce = nonceValue;
-                }
-                // Access scopes - returns NSArray*
-                NSArray *scopesArray = options[@"scopes"];
-                if (scopesArray && [scopesArray isKindOfClass:[NSArray class]] && scopesArray.count > 0) {
+            // Access nonce from TurboModule struct
+            if (options.nonce() && options.nonce().length > 0) {
+                nonce = options.nonce();
+            }
+            
+            // Access scopes from TurboModule struct
+            if (options.scopes().has_value()) {
+                const auto& scopesVector = options.scopes().value();
+                if (scopesVector.size() > 0) {
                     NSMutableArray *validScopes = [NSMutableArray array];
-                    for (id scope in scopesArray) {
-                        if ([scope isKindOfClass:[NSString class]] && ((NSString *)scope).length > 0) {
+                    for (NSString *scope : scopesVector) {
+                        if (scope && scope.length > 0) {
                             [validScopes addObject:scope];
                         }
                     }
@@ -445,7 +444,7 @@ RCT_EXPORT_MODULE()
     }
 }
 
-- (void)hasPlayServices:(NSDictionary *)options
+- (void)hasPlayServices:(JS::NativeRnGoogleSignin::HasPlayServicesParams &)params
                 resolve:(RCTPromiseResolveBlock)resolve
                  reject:(RCTPromiseRejectBlock)reject {
     @try {
