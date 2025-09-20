@@ -272,8 +272,8 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
         try {
             webClientId = when {
                 // Priority 1: Manual configuration (user override)
-                config.hasKey("androidClientId") -> config.getString("androidClientId")
                 config.hasKey("webClientId") -> config.getString("webClientId")
+                config.hasKey("androidClientId") -> config.getString("androidClientId")
                 else -> {
                     // Priority 2: Automatic detection from google-services.json as fallback
                     getClientIdFromGoogleServices()
@@ -342,7 +342,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
         val googleIdOption = GetGoogleIdOption.Builder()
             .setServerClientId(currentWebClientId)
             .setFilterByAuthorizedAccounts(false)
-            .setAutoSelectEnabled(false)
+            .setAutoSelectEnabled(true)  // Allow credential picker to show
             .setNonce(nonce)
             .build()
         val request = GetCredentialRequest.Builder()
