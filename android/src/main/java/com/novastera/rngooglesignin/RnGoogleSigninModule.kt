@@ -217,20 +217,72 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
 
     // MARK: - Configuration
 
+    /**
+     * Attempts to get client ID from google-services.json automatically.
+     * Uses Android's automatic resource generation - no manual parsing.
+     * Prioritizes Web Client ID for Credential Manager, falls back to Android Client ID.
+     * Returns null if not available - won't crash.
+     */
+    private fun getClientIdFromGoogleServices(): String? {
+        return try {
+            // Priority 1: Try to get Web Client ID (preferred for Credential Manager)
+            val webClientId = tryGetResource("default_web_client_id")
+            if (webClientId != null) return webClientId
+            
+            // Priority 2: Try alternative web client ID names
+            val altWebClientId = tryGetResource("web_client_id")
+            if (altWebClientId != null) return altWebClientId
+            
+            // Priority 3: Fall back to Android Client ID
+            val androidClientId = tryGetResource("default_android_client_id")
+            if (androidClientId != null) return androidClientId
+            
+            // Priority 4: Try alternative android client ID names
+            val altAndroidClientId = tryGetResource("android_client_id")
+            if (altAndroidClientId != null) return altAndroidClientId
+            
+            // No valid client ID found
+            null
+        } catch (e: Exception) {
+            // Any error - return null safely
+            null
+        }
+    }
+    
+    /**
+     * Helper method to safely try to get a resource by name
+     */
+    private fun tryGetResource(resourceName: String): String? {
+        return try {
+            val resourceId = reactContext.resources.getIdentifier(
+                resourceName, "string", reactContext.packageName
+            )
+            if (resourceId != 0) {
+                val clientId = reactContext.getString(resourceId)
+                if (clientId.isNotEmpty() && clientId != "null") {
+                    clientId
+                } else null
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     override fun configure(config: ReadableMap) {
         try {
             webClientId = when {
-                config.hasKey("webClientId") -> config.getString("webClientId")
+                // Priority 1: Manual configuration (user override)
                 config.hasKey("androidClientId") -> config.getString("androidClientId")
+                config.hasKey("webClientId") -> config.getString("webClientId")
                 else -> {
-                    // Configuration error - but we can't reject since this is not a Promise-based function
-                    // The error will be handled when trying to use the module
-                    return
+                    // Priority 2: Automatic detection from google-services.json as fallback
+                    getClientIdFromGoogleServices()
                 }
             }
 
             if (webClientId.isNullOrEmpty()) {
                 // Configuration error - but we can't reject since this is not a Promise-based function
+                // The error will be handled when trying to use the module
                 return
             }
 
@@ -387,21 +439,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                         val credential = result.credential
                         if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                             val idTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                            val response = Arguments.createMap().apply {
-                                val userInfo = Arguments.createMap().apply {
-                                    putString("id", idTokenCredential.id ?: "")
-                                    putString("name", idTokenCredential.displayName)
-                                    putString("email", idTokenCredential.id)
-                                    putString("photo", idTokenCredential.profilePictureUri?.toString())
-                                    putString("familyName", idTokenCredential.familyName)
-                                    putString("givenName", idTokenCredential.givenName)
-                                }
-                                val scopesArray = Arguments.createArray()
-                                putMap("user", userInfo)
-                                putArray("scopes", scopesArray)
-                                putString("serverAuthCode", null)
-                                putString("idToken", idTokenCredential.idToken)
-                            }
+                            val response = createUserResponse(idTokenCredential)
                             currentPromiseRef.getAndSet(null)?.resolve(response)
                         } else {
                             currentPromiseRef.getAndSet(null)?.reject("sign_in_required", "No user is currently signed in")
@@ -542,21 +580,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                         val credential = result.credential
                         if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                             val idTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-                            val response = Arguments.createMap().apply {
-                                val userInfo = Arguments.createMap().apply {
-                                    putString("id", idTokenCredential.id ?: "")
-                                    putString("name", idTokenCredential.displayName)
-                                    putString("email", idTokenCredential.id)
-                                    putString("photo", idTokenCredential.profilePictureUri?.toString())
-                                    putString("familyName", idTokenCredential.familyName)
-                                    putString("givenName", idTokenCredential.givenName)
-                                }
-                                val scopesArray = Arguments.createArray()
-                                putMap("user", userInfo)
-                                putArray("scopes", scopesArray)
-                                putString("serverAuthCode", null)
-                                putString("idToken", idTokenCredential.idToken)
-                            }
+                            val response = createUserResponse(idTokenCredential)
                             promise.resolve(response)
                         } else {
                             promise.resolve(null)

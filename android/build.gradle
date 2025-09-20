@@ -12,14 +12,17 @@ buildscript {
     classpath "com.android.tools.build:gradle:8.7.2"
     // noinspection DifferentKotlinGradleVersion
     classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${getExtOrDefault('kotlinVersion')}"
+    // Add Google Services plugin for automatic google-services.json handling
+    classpath 'com.google.gms:google-services:4.4.3'
   }
 }
 
 
 apply plugin: "com.android.library"
 apply plugin: "kotlin-android"
-
 apply plugin: "com.facebook.react"
+// Apply Google Services plugin for automatic google-services.json handling
+apply plugin: 'com.google.gms.google-services'
 
 def getExtOrIntegerDefault(name) {
   return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["RnGoogleSignin_" + name]).toInteger()
@@ -79,13 +82,14 @@ dependencies {
   implementation "com.facebook.react:react-android"
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
   
-  // Modern Google Identity APIs
+  // Modern Google Identity APIs - Updated to latest versions
   implementation "androidx.credentials:credentials:1.5.0"
   implementation "androidx.credentials:credentials-play-services-auth:1.5.0"
   implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
   
-  // AuthorizationClient for modern scope management
+  // Google Play Services - Updated to latest versions
   implementation "com.google.android.gms:play-services-identity:18.1.0"
+  implementation "com.google.android.gms:play-services-auth:21.4.0"
   
 }
 
