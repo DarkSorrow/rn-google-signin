@@ -349,10 +349,11 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             .addCredentialOption(googleIdOption)
             .build()
 
-        // Use activity context for the operation
+        // Use activity context for the operation, with fallback to application context
+        val context = activity ?: reactContext
         credentialManager?.getCredentialAsync(
             request = request,
-            context = activity,  // Always use activity context
+            context = context,  // Use activity if available, otherwise app context
             cancellationSignal = null,
             executor = mainExecutor,
             callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
@@ -427,10 +428,11 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             .addCredentialOption(googleIdOption)
             .build()
 
-        // Use activity context for the operation
+        // Use activity context for the operation, with fallback to application context
+        val context = activity ?: reactContext
         credentialManager?.getCredentialAsync(
             request = request,
-            context = activity,  // Always use activity context
+            context = context,  // Use activity if available, otherwise app context
             cancellationSignal = null,
             executor = mainExecutor,
             callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
@@ -519,9 +521,11 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             .addCredentialOption(googleIdOption)
             .build()
 
+        // Use activity context with fallback to application context
+        val context = activity ?: reactContext
         credentialManager.getCredentialAsync(
             request = request,
-            context = activity,
+            context = context,
             cancellationSignal = null,
             executor = mainExecutor,
             callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
@@ -568,10 +572,11 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             .addCredentialOption(googleIdOption)
             .build()
 
-        // Use activity context for the operation
+        // Use activity context for the operation, with fallback to application context
+        val context = activity ?: reactContext
         credentialManager?.getCredentialAsync(
             request = request,
-            context = activity,  // Always use activity context
+            context = context,  // Use activity if available, otherwise app context
             cancellationSignal = null,
             executor = mainExecutor,
             callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {
@@ -634,10 +639,11 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             .addCredentialOption(googleIdOption)
             .build()
 
-        // Use activity context for the operation
+        // Use activity context for the operation, with fallback to application context
+        val context = activity ?: reactContext
         credentialManager?.getCredentialAsync(
             request = request,
-            context = activity,  // Always use activity context
+            context = context,  // Use activity if available, otherwise app context
             cancellationSignal = null,
             executor = mainExecutor,
             callback = object : CredentialManagerCallback<GetCredentialResponse, GetCredentialException> {

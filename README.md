@@ -11,7 +11,6 @@ A modern, high-performance React Native Google Sign-In library built exclusively
 - **📱 Cross-Platform**: Full support for iOS and Android with platform-optimized implementations
 - **🔒 Security First**: Built-in nonce support and secure credential management
 - **⚡ Optimized Performance**: Thread-safe operations with intelligent caching and resource management
-- **📦 TypeScript**: Complete type definitions and excellent developer experience
 - **🔌 Expo Ready**: Includes Expo config plugin for seamless integration
 
 ## Requirements
@@ -349,6 +348,35 @@ newArchEnabled=true
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
+
+## FAQ
+
+### Q: Google Sign-In popup doesn't show in APK builds but works in development
+
+**A:** This is a common issue with production APK builds. Add these permissions to your app's `android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    
+    <application>
+        <!-- Your app configuration -->
+    </application>
+</manifest>
+```
+
+Also ensure your package name in `android/app/build.gradle` matches your Google Cloud Console configuration and add your production SHA-1 fingerprint:
+
+```bash
+cd android && ./gradlew signingReport
+```
+
+**Note:** For apps already published on Google Play Store, you can also find the SHA-1 fingerprint in the Play Console under **Release > Setup > App integrity**.
+
+### Q: Why does `isSignedIn()` trigger the credential picker on Android?
+
+**A:** This is a limitation of Google's Credential Manager API. Consider implementing your own sign-in state management for better user experience.
 
 ## License
 
