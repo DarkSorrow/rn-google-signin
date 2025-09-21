@@ -342,7 +342,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
         val googleIdOption = GetGoogleIdOption.Builder()
             .setServerClientId(currentWebClientId)
             .setFilterByAuthorizedAccounts(false)
-            .setAutoSelectEnabled(true)  // Allow credential picker to show
+            .setAutoSelectEnabled(false)  // Prevent auto-selection, show picker
             .setNonce(nonce)
             .build()
         val request = GetCredentialRequest.Builder()
