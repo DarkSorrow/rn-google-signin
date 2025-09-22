@@ -378,6 +378,30 @@ cd android && ./gradlew signingReport
 
 **A:** This is a limitation of Google's Credential Manager API. Consider implementing your own sign-in state management for better user experience.
 
+### Q: Why doesn't the library include a UI button, secure storage, or token parsing?
+
+**A:** The library focuses on providing the core Google Sign-In functionality while keeping things simple. Here's the reasoning behind these design decisions:
+
+**No UI Button:**
+- UI components would need customization to match different app designs
+- Most apps already have their own design systems and UI components
+- Keeps the package focused on authentication logic
+
+**Built-in Secure Storage:**
+- **iOS**: Google Sign-In SDK uses Keychain Services for secure token storage
+- **Android**: Credential Manager uses Encrypted SharedPreferences with AES-256 encryption
+- Both platforms have built-in token management with secure storage
+- No need for additional storage libraries for basic token management
+- You can still use additional storage libraries if you need custom features
+
+**No Token Parsing:**
+- JavaScript has built-in functions to parse JSON efficiently
+- Different applications handle tokens differently based on their needs
+- Would add another dependency and create parsing you might re-parse anyway
+- Keeps the package lightweight
+
+This approach aims to keep dependencies minimal while providing the raw data you need to implement your app's specific requirements.
+
 ## License
 
 Apache License - see [LICENSE](LICENSE) file for details.
