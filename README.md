@@ -402,6 +402,10 @@ cd android && ./gradlew signingReport
 
 This approach aims to keep dependencies minimal while providing the raw data you need to implement your app's specific requirements.
 
+### Q: Why is the iOS implementation in Objective-C instead of Swift?
+
+**A:** TurboModules don't support Swift natively yet. Using Swift would require the code to be bridged to Objective-C, which adds unnecessary overhead and complexity. Objective-C provides direct compatibility with TurboModules without any bridging layer, resulting in better performance and simpler integration.
+
 ## License
 
 Apache License - see [LICENSE](LICENSE) file for details.
