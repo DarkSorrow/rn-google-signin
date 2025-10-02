@@ -406,6 +406,10 @@ This approach aims to keep dependencies minimal while providing the raw data you
 
 **A:** TurboModules don't support Swift natively yet. Using Swift would require the code to be bridged to Objective-C, which adds unnecessary overhead and complexity. Objective-C provides direct compatibility with TurboModules without any bridging layer, resulting in better performance and simpler integration.
 
+## About
+
+This module is actively used in the mobile app of [Novastera.com](https://novastera.com), ensuring reliability and real-world production environments.
+
 ## License
 
 Apache License - see [LICENSE](LICENSE) file for details.
