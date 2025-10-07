@@ -24,6 +24,9 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "react"
         update-types: ["version-update:semver-major"]
+      # Ignore major version updates for React types to prevent breaking changes
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
       # Ignore major version updates for Expo to prevent breaking changes
       - dependency-name: "@expo/*"
         update-types: ["version-update:semver-major"]
