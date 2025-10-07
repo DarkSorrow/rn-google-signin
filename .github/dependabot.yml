@@ -1,0 +1,121 @@
+version: 2
+updates:
+  # JavaScript/TypeScript dependencies (main package)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: 1
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "DarkSorrow"
+    assignees:
+      - "DarkSorrow"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "javascript"
+    ignore:
+      # Ignore major version updates for React Native to prevent breaking changes
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      # Ignore major version updates for Expo to prevent breaking changes
+      - dependency-name: "@expo/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "expo-*"
+        update-types: ["version-update:semver-major"]
+
+  # Example app dependencies
+  - package-ecosystem: "npm"
+    directory: "/example"
+    schedule:
+      interval: "monthly"
+      day: 1
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "DarkSorrow"
+    assignees:
+      - "DarkSorrow"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "example"
+    ignore:
+      # Ignore major version updates for React Native in example
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+
+  # Android Gradle dependencies
+  - package-ecosystem: "gradle"
+    directory: "/android"
+    schedule:
+      interval: "monthly"
+      day: 1
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "DarkSorrow"
+    assignees:
+      - "DarkSorrow"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "android"
+    ignore:
+      # Ignore major version updates for Android Gradle Plugin
+      - dependency-name: "com.android.tools.build:gradle"
+        update-types: ["version-update:semver-major"]
+      # Ignore major version updates for Kotlin
+      - dependency-name: "org.jetbrains.kotlin:kotlin-gradle-plugin"
+        update-types: ["version-update:semver-major"]
+
+  # Example Android Gradle dependencies
+  - package-ecosystem: "gradle"
+    directory: "/example/android"
+    schedule:
+      interval: "monthly"
+      day: 1
+      time: "09:00"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "DarkSorrow"
+    assignees:
+      - "DarkSorrow"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "example"
+      - "android"
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      day: 1
+      time: "09:00"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "DarkSorrow"
+    assignees:
+      - "DarkSorrow"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
