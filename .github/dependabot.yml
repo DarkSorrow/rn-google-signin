@@ -26,14 +26,15 @@ updates:
           - "minor"
           - "patch"
     ignore:
-      # Ignore major version updates for React Native to prevent breaking changes
+      # Ignore ALL version updates for React Native - library should never change this
       - dependency-name: "react-native"
-        update-types: ["version-update:semver-major"]
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      # Ignore ALL version updates for React - library should never change this
       - dependency-name: "react"
-        update-types: ["version-update:semver-major"]
-      # Ignore major version updates for React types to prevent breaking changes
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      # Ignore ALL version updates for React types - library should never change this
       - dependency-name: "@types/react"
-        update-types: ["version-update:semver-major"]
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
       # Ignore major version updates for Expo to prevent breaking changes
       - dependency-name: "@expo/*"
         update-types: ["version-update:semver-major"]
@@ -66,11 +67,12 @@ updates:
           - "minor"
           - "patch"
     ignore:
-      # Ignore major version updates for React Native in example
+      # Ignore ALL version updates for React Native in example - should match main library
       - dependency-name: "react-native"
-        update-types: ["version-update:semver-major"]
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      # Ignore ALL version updates for React in example - should match main library
       - dependency-name: "react"
-        update-types: ["version-update:semver-major"]
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
 
   # Android Gradle dependencies
   - package-ecosystem: "gradle"
