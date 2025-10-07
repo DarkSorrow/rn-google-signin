@@ -1776,14 +1776,16 @@ __metadata:
   linkType: hard
 
 "@eslint/compat@npm:^1.2.7":
-  version: 1.3.1
-  resolution: "@eslint/compat@npm:1.3.1"
+  version: 1.4.0
+  resolution: "@eslint/compat@npm:1.4.0"
+  dependencies:
+    "@eslint/core": ^0.16.0
   peerDependencies:
     eslint: ^8.40 || 9
   peerDependenciesMeta:
     eslint:
       optional: true
-  checksum: 1df5594c02bbba3c1d7f7887e40e76a53967836a72048b9094bf501efe75c12fd5de6318ca005d97672d6590eb46d24f2197505015b52ae9c7c66c2ae19d9d35
+  checksum: 090882a61e3c8fa1911ff796f9cf13ed645139760cdecb2444dcb6c75a0d2f2a379e62b1e83586a13ece2280ed8a3acea9cc125acb99bc68012575918ac8f26d
   languageName: node
   linkType: hard
 
@@ -1816,6 +1818,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@eslint/core@npm:^0.16.0":
+  version: 0.16.0
+  resolution: "@eslint/core@npm:0.16.0"
+  dependencies:
+    "@types/json-schema": ^7.0.15
+  checksum: 5c08dbf08aa27a6e057003a05a29f483038b70e59f9ac7af26938d0fa4627383c95768e2154835260607de34975e8f407c10762af9a005ed348cd8039cc6aede
+  languageName: node
+  linkType: hard
+
 "@eslint/eslintrc@npm:^3.3.0, @eslint/eslintrc@npm:^3.3.1":
   version: 3.3.1
   resolution: "@eslint/eslintrc@npm:3.3.1"
@@ -1833,17 +1844,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@eslint/js@npm:9.37.0":
+"@eslint/js@npm:9.37.0, @eslint/js@npm:^9.22.0":
   version: 9.37.0
   resolution: "@eslint/js@npm:9.37.0"
   checksum: 916f2ff7f70eadaa3a1c3f7d6d375fccfb676723484e1c54c5d63ff8a462746090097b73d21f4cb876ff2276d04af3f1c4c9e9a93729a9305213ca3aaa75008c
-  languageName: node
-  linkType: hard
-
-"@eslint/js@npm:^9.22.0":
-  version: 9.31.0
-  resolution: "@eslint/js@npm:9.31.0"
-  checksum: 0160e59702bdbee82f5234a1663255300e8747581641f657e5da12496c4dd46d75dd789866c0fe112a5f898a2450359333151e607775165da6a8efbd689be57c
   languageName: node
   linkType: hard
 
