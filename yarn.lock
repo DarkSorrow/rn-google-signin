@@ -6695,35 +6695,35 @@ __metadata:
   linkType: hard
 
 "eslint-config-prettier@npm:^10.1.1":
-  version: 10.1.5
-  resolution: "eslint-config-prettier@npm:10.1.5"
+  version: 10.1.8
+  resolution: "eslint-config-prettier@npm:10.1.8"
   peerDependencies:
     eslint: ">=7.0.0"
   bin:
     eslint-config-prettier: bin/cli.js
-  checksum: 6d8eb41c716fc2b073bfd9daede0c87c4c2b29055f15c94618eec00a19c5499024ddb89902d6793b5ac9102075e4739d7cc2d4d58c7e7ed4cc2dcf79e3fbcacc
+  checksum: 9140e19f78f0dbc888b160bb72b85f8043bada7b12a548faa56cea0ba74f8ef16653250ffd014d85d9a376a88c4941c96a3cdc9d39a07eb3def6967166635bd8
   languageName: node
   linkType: hard
 
 "eslint-config-prettier@npm:^8.5.0":
-  version: 8.10.0
-  resolution: "eslint-config-prettier@npm:8.10.0"
+  version: 8.10.2
+  resolution: "eslint-config-prettier@npm:8.10.2"
   peerDependencies:
     eslint: ">=7.0.0"
   bin:
     eslint-config-prettier: bin/cli.js
-  checksum: 153266badd477e49b0759816246b2132f1dbdb6c7f313ca60a9af5822fd1071c2bc5684a3720d78b725452bbac04bb130878b2513aea5e72b1b792de5a69fec8
+  checksum: a92b7e8a996e65adf79de1579524235687e9d3552d088cfab4f170da60d23762addb4276169c8ca3a9551329dda8408c59f7e414101b238a6385379ac1bc3b16
   languageName: node
   linkType: hard
 
 "eslint-config-prettier@npm:^9.1.0":
-  version: 9.1.0
-  resolution: "eslint-config-prettier@npm:9.1.0"
+  version: 9.1.2
+  resolution: "eslint-config-prettier@npm:9.1.2"
   peerDependencies:
     eslint: ">=7.0.0"
   bin:
     eslint-config-prettier: bin/cli.js
-  checksum: 9229b768c879f500ee54ca05925f31b0c0bafff3d9f5521f98ff05127356de78c81deb9365c86a5ec4efa990cb72b74df8612ae15965b14136044c73e1f6a907
+  checksum: e786b767331094fd024cb1b0899964a9da0602eaf4ebd617d6d9794752ccd04dbe997e3c14c17f256c97af20bee1c83c9273f69b74cb2081b6f514580d62408f
   languageName: node
   linkType: hard
 
