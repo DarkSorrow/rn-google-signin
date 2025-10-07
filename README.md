@@ -1,6 +1,6 @@
 # React Native Google Sign-In
 
-[![Dependabot Status](https://api.dependabot.com/badges/status?dependency-manager=npm&package-manager=npm&repo=DarkSorrow/rn-google-signin)](https://dependabot.com)
+[![Dependabot](https://img.shields.io/badge/dependabot-enabled-brightgreen.svg)](https://dependabot.com)
 [![Security Status](https://img.shields.io/badge/security-monitored-brightgreen.svg)](https://github.com/DarkSorrow/rn-google-signin/security)
 [![Dependencies](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg)](https://github.com/DarkSorrow/rn-google-signin)
 

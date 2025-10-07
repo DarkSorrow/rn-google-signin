@@ -85,7 +85,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/core@npm:^7.11.6, @babel/core@npm:^7.12.3, @babel/core@npm:^7.23.9, @babel/core@npm:^7.25.2, @babel/core@npm:^7.28.0":
+"@babel/core@npm:^7.11.6, @babel/core@npm:^7.12.3, @babel/core@npm:^7.23.9, @babel/core@npm:^7.25.2":
   version: 7.28.0
   resolution: "@babel/core@npm:7.28.0"
   dependencies:
@@ -108,7 +108,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/core@npm:^7.27.4":
+"@babel/core@npm:^7.27.4, @babel/core@npm:^7.28.4":
   version: 7.28.4
   resolution: "@babel/core@npm:7.28.4"
   dependencies:
@@ -1775,7 +1775,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@eslint/compat@npm:^1.2.7":
+"@eslint/compat@npm:^1.4.0":
   version: 1.4.0
   resolution: "@eslint/compat@npm:1.4.0"
   dependencies:
@@ -2841,8 +2841,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@novastera-oss/rn-google-signin@workspace:."
   dependencies:
-    "@babel/core": ^7.28.0
-    "@eslint/compat": ^1.2.7
+    "@babel/core": ^7.28.4
+    "@eslint/compat": ^1.4.0
     "@eslint/eslintrc": ^3.3.0
     "@eslint/js": ^9.22.0
     "@expo/config-plugins": 54.0.2
@@ -2853,9 +2853,9 @@ __metadata:
     "@types/jest": ^30.0.0
     "@types/react": ~19.1.17
     del-cli: ^7.0.0
-    eslint: ^9.31.0
-    eslint-config-prettier: ^10.1.1
-    eslint-plugin-prettier: ^5.5.3
+    eslint: ^9.37.0
+    eslint-config-prettier: ^10.1.8
+    eslint-plugin-prettier: ^5.5.4
     expo-module-scripts: ^5.0.1
     jest: ^30.0.0
     prettier: ^3.0.3
@@ -2863,8 +2863,8 @@ __metadata:
     react-native: 0.81.4
     react-native-builder-bob: ^0.40.12
     release-it: ^19.0.4
-    turbo: ^2.5.6
-    typescript: ^5.8.3
+    turbo: ^2.5.8
+    typescript: ^5.9.3
   peerDependencies:
     react: "*"
     react-native: "*"
@@ -6700,14 +6700,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-prettier@npm:^10.1.1":
-  version: 10.1.5
-  resolution: "eslint-config-prettier@npm:10.1.5"
+"eslint-config-prettier@npm:^10.1.8":
+  version: 10.1.8
+  resolution: "eslint-config-prettier@npm:10.1.8"
   peerDependencies:
     eslint: ">=7.0.0"
   bin:
     eslint-config-prettier: bin/cli.js
-  checksum: 6d8eb41c716fc2b073bfd9daede0c87c4c2b29055f15c94618eec00a19c5499024ddb89902d6793b5ac9102075e4739d7cc2d4d58c7e7ed4cc2dcf79e3fbcacc
+  checksum: 9140e19f78f0dbc888b160bb72b85f8043bada7b12a548faa56cea0ba74f8ef16653250ffd014d85d9a376a88c4941c96a3cdc9d39a07eb3def6967166635bd8
   languageName: node
   linkType: hard
 
@@ -6932,7 +6932,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-prettier@npm:^5.5.3":
+"eslint-plugin-prettier@npm:^5.5.4":
   version: 5.5.4
   resolution: "eslint-plugin-prettier@npm:5.5.4"
   dependencies:
@@ -7064,7 +7064,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint@npm:^9.31.0":
+"eslint@npm:^9.37.0":
   version: 9.37.0
   resolution: "eslint@npm:9.37.0"
   dependencies:
@@ -13369,7 +13369,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"turbo@npm:^2.5.6":
+"turbo@npm:^2.5.8":
   version: 2.5.8
   resolution: "turbo@npm:2.5.8"
   dependencies:
@@ -13512,7 +13512,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.8.3, typescript@npm:^5.9.2":
+"typescript@npm:^5.9.2, typescript@npm:^5.9.3":
   version: 5.9.3
   resolution: "typescript@npm:5.9.3"
   bin:
@@ -13522,7 +13522,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^5.8.3#~builtin<compat/typescript>, typescript@patch:typescript@^5.9.2#~builtin<compat/typescript>":
+"typescript@patch:typescript@^5.9.2#~builtin<compat/typescript>, typescript@patch:typescript@^5.9.3#~builtin<compat/typescript>":
   version: 5.9.3
   resolution: "typescript@patch:typescript@npm%3A5.9.3#~builtin<compat/typescript>::version=5.9.3&hash=14eedb"
   bin:
