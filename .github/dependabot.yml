@@ -5,7 +5,7 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
-      day: 1
+      day: "monday"
       time: "09:00"
     open-pull-requests-limit: 10
     reviewers:
@@ -35,7 +35,7 @@ updates:
     directory: "/example"
     schedule:
       interval: "monthly"
-      day: 1
+      day: "monday"
       time: "09:00"
     open-pull-requests-limit: 5
     reviewers:
@@ -60,7 +60,7 @@ updates:
     directory: "/android"
     schedule:
       interval: "monthly"
-      day: 1
+      day: "monday"
       time: "09:00"
     open-pull-requests-limit: 5
     reviewers:
@@ -86,7 +86,7 @@ updates:
     directory: "/example/android"
     schedule:
       interval: "monthly"
-      day: 1
+      day: "monday"
       time: "09:00"
     open-pull-requests-limit: 3
     reviewers:
@@ -106,7 +106,7 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
-      day: 1
+      day: "monday"
       time: "09:00"
     open-pull-requests-limit: 3
     reviewers:
