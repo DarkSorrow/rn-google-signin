@@ -2829,7 +2829,7 @@ __metadata:
     "@react-native/eslint-config": ^0.81.1
     "@release-it/conventional-changelog": ^10.0.1
     "@types/jest": ^30.0.0
-    "@types/react": ~19.1.17
+    "@types/react": ~19.2.1
     del-cli: ^7.0.0
     eslint: ^9.31.0
     eslint-config-prettier: ^10.1.1
@@ -2837,7 +2837,7 @@ __metadata:
     expo-module-scripts: ^5.0.1
     jest: ^30.0.0
     prettier: ^3.0.3
-    react: 19.1.0
+    react: 19.2.0
     react-native: 0.81.4
     react-native-builder-bob: ^0.40.12
     release-it: ^19.0.4
@@ -3798,12 +3798,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:~19.1.17":
-  version: 19.1.17
-  resolution: "@types/react@npm:19.1.17"
+"@types/react@npm:~19.2.1":
+  version: 19.2.1
+  resolution: "@types/react@npm:19.2.1"
   dependencies:
     csstype: ^3.0.2
-  checksum: 4d73b79a73b1dbe873a459de4faca4ba50963a8e244ba5f665208cf05d682766c7ddc2c10f1aba3bebd876cb89e81104bdb09fee2bed0fc8482fc087bffa11e3
+  checksum: 587606729002c9b08b3515f60fe90792dc74dea1ec28336e2544a4b9d8fafca2059c6a50daa57dfdd58a25af036fdf74a67bc24f94e697f01a24c4c1cbad59c6
   languageName: node
   linkType: hard
 
@@ -11807,10 +11807,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:19.1.0":
-  version: 19.1.0
-  resolution: "react@npm:19.1.0"
-  checksum: c0905f8cfb878b0543a5522727e5ed79c67c8111dc16ceee135b7fe19dce77b2c1c19293513061a8934e721292bfc1517e0487e262d1906f306bdf95fa54d02f
+"react@npm:19.2.0":
+  version: 19.2.0
+  resolution: "react@npm:19.2.0"
+  checksum: 33dd01bf699e1c5040eb249e0f552519adf7ee90b98c49d702a50bf23af6852ea46023a5f7f93966ab10acd7a45428fa0f193c686ecdaa7a75a03886e53ec3fe
   languageName: node
   linkType: hard
 
