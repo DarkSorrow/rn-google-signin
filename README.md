@@ -57,7 +57,7 @@ await GoogleSignin.configure({});
 ```typescript
 // Sign in
 try {
-  const userInfo = await GoogleSignin.signIn(null);
+  const userInfo = await GoogleSignin.signIn({});
   console.log('User info:', userInfo);
 } catch (error) {
   console.error('Sign in error:', error);
@@ -71,15 +71,15 @@ await GoogleSignin.signOut();
 
 ```typescript
 // ✅ Correct - always pass the parameter
-await GoogleSignin.signIn(null);
-await GoogleSignin.hasPlayServices(null);
+await GoogleSignin.signIn({});
+await GoogleSignin.hasPlayServices({});
 
 // ❌ Incorrect - will cause runtime errors
 await GoogleSignin.signIn();
 await GoogleSignin.hasPlayServices();
 ```
 
-**Note**: When using default configuration, pass `null` as the parameter. When using custom options, pass an object with the desired configuration.
+**Note**: When using default configuration, pass `{}` as the parameter. When using custom options, pass an object with the desired configuration.
 
 ## Configuration
 
@@ -294,7 +294,7 @@ interface SignInResponse {
 
 ```typescript
 try {
-  await GoogleSignin.signIn(null);
+  await GoogleSignin.signIn({});
 } catch (error: any) {
   switch (error.code) {
     case 'sign_in_cancelled':
