@@ -45,8 +45,7 @@
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
     "build:expo-plugin": "cd expo-plugin && tsc",
     "test:plugin": "node test-plugin.js",
-    "prepare": "bob build && yarn build:expo-plugin",
-    "release": "release-it --only-version"
+    "prepare": "bob build && yarn build:expo-plugin"
   },
   "keywords": [
     "react-native",
@@ -99,7 +98,6 @@
     "@react-native-community/cli": "20.0.0",
     "@react-native/babel-preset": "0.81.1",
     "@react-native/eslint-config": "^0.81.1",
-    "@release-it/conventional-changelog": "^10.0.1",
     "@types/jest": "^30.0.0",
     "@types/react": "~19.1.17",
     "del-cli": "^7.0.0",
@@ -112,7 +110,6 @@
     "react": "19.1.0",
     "react-native": "0.81.4",
     "react-native-builder-bob": "^0.40.12",
-    "release-it": "^19.0.4",
     "turbo": "^2.5.8",
     "typescript": "^5.9.3"
   },
@@ -126,25 +123,6 @@
       "<rootDir>/example/node_modules",
       "<rootDir>/lib/"
     ]
-  },
-  "release-it": {
-    "git": {
-      "commitMessage": "chore: release ${version}",
-      "tagName": "v${version}"
-    },
-    "npm": {
-      "publish": true
-    },
-    "github": {
-      "release": true
-    },
-    "plugins": {
-      "@release-it/conventional-changelog": {
-        "preset": {
-          "name": "angular"
-        }
-      }
-    }
   },
   "prettier": {
     "quoteProps": "consistent",
