@@ -35,6 +35,14 @@ updates:
       # Ignore ALL version updates for React types - library should never change this
       - dependency-name: "@types/react"
         update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      # Ignore ALL version updates for React Native specific packages - must match React Native version
+      - dependency-name: "@react-native/babel-preset"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "@react-native/eslint-config"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      # Ignore minor version updates for React Native CLI - must be compatible with React Native version
+      - dependency-name: "@react-native-community/cli"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
       # Ignore major version updates for Expo to prevent breaking changes
       - dependency-name: "@expo/*"
         update-types: ["version-update:semver-major"]
