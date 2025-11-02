@@ -157,9 +157,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    labels:
-      - "dependencies"
-      - "github-actions"
     groups:
       github-actions-dependencies:
         patterns:
