@@ -56,7 +56,7 @@ jobs:
           echo "✅ Build verification passed"
 
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: package-artifacts
           path: .
