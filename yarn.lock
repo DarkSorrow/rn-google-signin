@@ -2534,7 +2534,7 @@ __metadata:
     prettier: "npm:^3.0.3"
     react: "npm:19.1.1"
     react-native: "npm:0.82.1"
-    react-native-builder-bob: "npm:^0.40.14"
+    react-native-builder-bob: "npm:^0.40.15"
     turbo: "npm:^2.6.0"
     typescript: "npm:^5.9.3"
   peerDependencies:
@@ -10098,9 +10098,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-builder-bob@npm:^0.40.14":
-  version: 0.40.14
-  resolution: "react-native-builder-bob@npm:0.40.14"
+"react-native-builder-bob@npm:^0.40.15":
+  version: 0.40.15
+  resolution: "react-native-builder-bob@npm:0.40.15"
   dependencies:
     "@babel/core": "npm:^7.25.2"
     "@babel/plugin-transform-flow-strip-types": "npm:^7.26.5"
@@ -10126,7 +10126,7 @@ __metadata:
     yargs: "npm:^17.5.1"
   bin:
     bob: bin/bob
-  checksum: 10c0/b74dcdf8972e3c3904a1a5d89b16fbe20cf6ec506a45a101d1c2b709b6c9f080a7f4dd319b69d95e88d277a8c6ee0f20bf0dc557dc982afbc533b4a5b00ab427
+  checksum: 10c0/93b6d1c6555a1c26cf6f1e1e2500d9b8c91b04074c181d4abeb0491094f40ecf9d404fa125f4748ec7b6ab2a79a11452e3d500149004da3b3dffda329852edcf
   languageName: node
   linkType: hard
 
