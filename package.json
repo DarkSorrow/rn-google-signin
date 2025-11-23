@@ -45,7 +45,7 @@
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
     "build:expo-plugin": "cd expo-plugin && tsc",
     "test:plugin": "node test-plugin.js",
-    "prepare": "bob build && yarn build:expo-plugin"
+    "prepare": "npx bob build && yarn build:expo-plugin"
   },
   "keywords": [
     "react-native",
