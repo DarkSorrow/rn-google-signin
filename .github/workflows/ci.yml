@@ -111,6 +111,8 @@ jobs:
           echo "✅ Version updated to $VERSION"
 
       - name: Publish to NPM
-        run: npm publish --access public
+        run: |
+          export PATH="$PATH:$(pwd)/node_modules/.bin"
+          npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_SECRET }} 

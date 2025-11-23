@@ -45,7 +45,7 @@
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
     "build:expo-plugin": "cd expo-plugin && tsc",
     "test:plugin": "node test-plugin.js",
-    "prepare": "yarn bob build && yarn build:expo-plugin"
+    "prepare": "([ -d lib/module ] && [ -d lib/typescript ] && [ -d expo-plugin/build ]) || (yarn exec bob build && yarn build:expo-plugin)"
   },
   "keywords": [
     "react-native",
@@ -109,7 +109,7 @@
     "prettier": "^3.0.3",
     "react": "19.1.1",
     "react-native": "0.82.1",
-    "react-native-builder-bob": "^0.40.14",
+    "react-native-builder-bob": "^0.40.15",
     "turbo": "^2.6.0",
     "typescript": "^5.9.3"
   },
