@@ -21,14 +21,11 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Install Dependencies
-        run: yarn install --immutable
+        run: npm ci
 
       - name: Build Package
-        run: yarn prepare
+        run: npm run prepare
 
       - name: Verify Build Output
         run: |
@@ -80,11 +77,8 @@ jobs:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Install Dependencies
-        run: yarn install --immutable
+        run: npm ci
 
       - name: Update Version
         run: |

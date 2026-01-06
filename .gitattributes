@@ -1,3 +1,5 @@
 *.pbxproj -text
 # specific for windows script files
 *.bat text eol=crlf
+# preserve execute permissions for gradlew
+gradlew text eol=lf

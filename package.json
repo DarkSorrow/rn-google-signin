@@ -45,7 +45,7 @@
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
     "build:expo-plugin": "cd expo-plugin && tsc",
     "test:plugin": "node test-plugin.js",
-    "prepare": "([ -d lib/module ] && [ -d lib/typescript ] && [ -d expo-plugin/build ]) || (yarn exec bob build && yarn build:expo-plugin)"
+    "prepare": "([ -d lib/module ] && [ -d lib/typescript ] && [ -d expo-plugin/build ] && echo '✅ Build artifacts already exist, skipping build...') || (echo '🔨 Building package...' && npm exec bob build && npm run build:expo-plugin && echo '✅ Build complete!')"
   },
   "keywords": [
     "react-native",
@@ -181,6 +181,5 @@
     "plugins": [
       "@novastera-oss/rn-google-signin"
     ]
-  },
-  "packageManager": "yarn@4.12.0"
+  }
 }
