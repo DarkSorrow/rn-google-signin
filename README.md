@@ -4,7 +4,7 @@
 [![Security Status](https://img.shields.io/badge/security-monitored-brightgreen.svg)](https://github.com/DarkSorrow/rn-google-signin/security)
 [![Dependencies](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg)](https://github.com/DarkSorrow/rn-google-signin)
 
-A modern, high-performance React Native Google Sign-In library built exclusively for **Turbo Modules** with automatic configuration detection.
+A modern, high-performance React Native Google Sign-In library built exclusively for **Turbo Modules** with automatic configuration detection. Part of the **Novastera** open-source ecosystem - a modern CRM/ERP platform that combines enterprise-grade authentication with comprehensive business management tools.
 
 > **⚠️ Important**: This package requires React Native **New Architecture (TurboModules)** and does **NOT** support the legacy bridge architecture.
 
@@ -410,9 +410,21 @@ This approach aims to keep dependencies minimal while providing the raw data you
 
 **A:** TurboModules don't support Swift natively yet. Using Swift would require the code to be bridged to Objective-C, which adds unnecessary overhead and complexity. Objective-C provides direct compatibility with TurboModules without any bridging layer, resulting in better performance and simpler integration.
 
-## About
+## About Novastera
 
-This module is actively used in the mobile app of [Novastera.com](https://novastera.com), ensuring reliability and real-world production environments.
+**React Native Google Sign-In** is part of the **Novastera** open-source ecosystem, a modern CRM/ERP platform designed for the next generation of business applications. Novastera combines cutting-edge authentication solutions with comprehensive business management tools, enabling organizations to leverage modern social login for seamless user experiences and enhanced security.
+
+### Key Features of Novastera Platform
+
+- **Modern CRM/ERP System**: Comprehensive business management with AI-powered insights and real-time collaboration
+- **Secure Authentication**: Enterprise-grade authentication with Google Sign-In, OAuth 2.0, and social login support
+- **Mobile-First**: Native iOS and Android applications built with React Native and Turbo Modules
+- **Open Source**: Part of Novastera's commitment to open-source innovation and developer-friendly solutions
+- **Privacy-Focused**: On-device AI capabilities with no data leaving user devices
+
+This library is currently being used in [Novastera's](https://novastera.com) mobile application, demonstrating its capabilities in production environments. We're committed to providing modern, secure authentication solutions that stay up-to-date with the latest Google Sign-In SDK features and React Native best practices, helping developers build applications with seamless social login experiences.
+
+Learn more about Novastera: [https://novastera.com/resources](https://novastera.com/resources)
 
 ## License
 

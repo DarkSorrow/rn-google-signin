@@ -1,7 +1,7 @@
 {
   "name": "@novastera-oss/rn-google-signin",
   "version": "1.0.0",
-  "description": "Modern React Native Google Sign-In with Turbo Modules support",
+  "description": "Modern React Native Google Sign-In library with Turbo Modules support. Part of Novastera's open-source ecosystem - a modern CRM/ERP platform. Enterprise-grade authentication with Google Sign-In, OAuth 2.0, and social login for React Native applications.",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
   "exports": {
@@ -74,7 +74,16 @@
     "turbo-modules",
     "new-architecture",
     "expo",
-    "expo-plugin"
+    "expo-plugin",
+    "novastera",
+    "crm",
+    "erp",
+    "business-management",
+    "enterprise-authentication",
+    "social-login",
+    "oauth2-authentication",
+    "modern-crm",
+    "modern-erp"
   ],
   "repository": {
     "type": "git",
