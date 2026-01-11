@@ -19,7 +19,6 @@ class RnGoogleSigninPackage : TurboReactPackage() {
     }
   }
 
-  // 오타 수정: 함수명에 공백 제거
   override fun getReactModuleInfoProvider(): ReactModuleInfoProvider {
     return ReactModuleInfoProvider {
       mapOf(
