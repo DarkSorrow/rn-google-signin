@@ -23,6 +23,8 @@ import java.util.Base64
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
 import java.lang.ref.WeakReference
+import org.json.JSONObject
+import android.util.Base64
 
 @ReactModule(name = RNGoogleSigninModule.NAME)
 class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
@@ -69,12 +71,26 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
     /**
      * Creates a standardized user response map from GoogleIdTokenCredential
      */
+    // this function is needed because recent GoogleIdTokenCredential doesn't returns emails, etc. Instead they return JWT which we can parse it to obtain email
+    fun parseEmailFromIdToken(idToken: String?): String? {
+        if (idToken == null) return null
+        val parts = idToken.split(".") // Header.Payload.Signature
+        if (parts.size < 2) return null
+        val payloadEncoded = parts[1]
+        val decodedBytes = Base64.decode(payloadEncoded, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
+        val payload = String(decodedBytes, Charsets.UTF_8)
+        val payloadJson = JSONObject(payload)
+        return payloadJson.optString("email", null)
+    }
+
     private fun createUserResponse(idTokenCredential: GoogleIdTokenCredential): WritableMap {
+        val idToken = idTokenCredential.idToken
+        val email = parseEmailFromIdToken(idToken)
         return Arguments.createMap().apply {
             val userInfo = Arguments.createMap().apply {
                 putString("id", idTokenCredential.id ?: "")
                 putString("name", idTokenCredential.displayName)
-                putString("email", idTokenCredential.id)
+                putString("email", email) 
                 putString("photo", idTokenCredential.profilePictureUri?.toString())
                 putString("familyName", idTokenCredential.familyName)
                 putString("givenName", idTokenCredential.givenName)
@@ -83,7 +99,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             putMap("user", userInfo)
             putArray("scopes", scopesArray)
             putString("serverAuthCode", null)
-            putString("idToken", idTokenCredential.idToken)
+            putString("idToken", idToken)
         }
     }
 
