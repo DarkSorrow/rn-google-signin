@@ -59,6 +59,7 @@ jobs:
           path: .
           retention-days: 1
 
+  # Trusted publisher on npm must use workflow filename: ci.yml (exact match)
   publish:
     name: Publish to NPM
     if: github.event_name == 'release' && github.event.action == 'published'
