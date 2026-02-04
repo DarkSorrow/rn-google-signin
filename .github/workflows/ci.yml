@@ -64,6 +64,9 @@ jobs:
     if: github.event_name == 'release' && github.event.action == 'published'
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # Required for OIDC trusted publishing
+      contents: read
     steps:
       - name: Download Build Artifacts
         uses: actions/download-artifact@v7
@@ -107,6 +110,4 @@ jobs:
       - name: Publish to NPM
         run: |
           export PATH="$PATH:$(pwd)/node_modules/.bin"
-          npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_SECRET }} 
+          npm publish --access public 
