@@ -65,6 +65,7 @@ jobs:
     if: github.event_name == 'release' && github.event.action == 'published'
     needs: build
     runs-on: ubuntu-latest
+    environment: production
     permissions:
       id-token: write   # Required for OIDC trusted publishing
       contents: read
@@ -79,7 +80,6 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Install Dependencies
         run: npm ci
@@ -110,5 +110,4 @@ jobs:
 
       - name: Publish to NPM
         run: |
-          export PATH="$PATH:$(pwd)/node_modules/.bin"
-          npm publish --access public 
+          npm publish --provenance --access public
