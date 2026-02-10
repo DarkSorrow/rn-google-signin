@@ -39,17 +39,17 @@ yarn add @novastera-oss/rn-google-signin
 Configure the library with your Google client IDs:
 
 ```typescript
-import { GoogleSignin } from '@novastera-oss/rn-google-signin';
+import RnGoogleSignin from '@novastera-oss/rn-google-signin';
 
 // Manual configuration (recommended)
-await GoogleSignin.configure({
+RnGoogleSignin.configure({
   webClientId: 'your-web-client-id.apps.googleusercontent.com',
   androidClientId: 'your-android-client-id.apps.googleusercontent.com',
   iosClientId: 'your-ios-client-id.apps.googleusercontent.com',
 });
 
 // Automatic detection (fallback only)
-await GoogleSignin.configure({});
+RnGoogleSignin.configure({});
 ```
 
 ### Basic Usage
@@ -57,26 +57,26 @@ await GoogleSignin.configure({});
 ```typescript
 // Sign in
 try {
-  const userInfo = await GoogleSignin.signIn({});
+  const userInfo = await RnGoogleSignin.signIn({});
   console.log('User info:', userInfo);
 } catch (error) {
   console.error('Sign in error:', error);
 }
 
 // Sign out
-await GoogleSignin.signOut();
+await RnGoogleSignin.signOut();
 ```
 
 **⚠️ Important**: Due to React Native TurboModule requirements, all method parameters must be explicitly passed, even when using default values.
 
 ```typescript
 // ✅ Correct - always pass the parameter
-await GoogleSignin.signIn({});
-await GoogleSignin.hasPlayServices({});
+await RnGoogleSignin.signIn({});
+await RnGoogleSignin.hasPlayServices({});
 
 // ❌ Incorrect - will cause runtime errors
-await GoogleSignin.signIn();
-await GoogleSignin.hasPlayServices();
+await RnGoogleSignin.signIn();
+await RnGoogleSignin.hasPlayServices();
 ```
 
 **Note**: When using default configuration, pass `{}` as the parameter. When using custom options, pass an object with the desired configuration.
@@ -88,11 +88,11 @@ await GoogleSignin.hasPlayServices();
 Provide your Google client IDs explicitly:
 
 ```typescript
-await GoogleSignin.configure({
-  // Android (choose one)
-  androidClientId: 'your-android-client-id.apps.googleusercontent.com',
+RnGoogleSignin.configure({
+  // Android (Credential Manager uses Web client ID)
   webClientId: 'your-web-client-id.apps.googleusercontent.com',
-  
+  androidClientId: 'your-android-client-id.apps.googleusercontent.com', // optional alias
+
   // iOS
   iosClientId: 'your-ios-client-id.apps.googleusercontent.com',
 });
@@ -141,7 +141,7 @@ Add the plugin without options to your `app.json` or `app.config.js`:
     },
     "android": {
       "googleServicesFile": "./google-services.json"
-    }
+    },
     "plugins": [
       [
         "@novastera-oss/rn-google-signin",
@@ -294,14 +294,17 @@ interface SignInResponse {
 
 ```typescript
 try {
-  await GoogleSignin.signIn({});
+  await RnGoogleSignin.signIn({});
 } catch (error: any) {
   switch (error.code) {
     case 'sign_in_cancelled':
       // User cancelled
       break;
     case 'sign_in_required':
-      // Sign in required
+      // Sign in required (e.g. silent sign-in had no session)
+      break;
+    case 'no_credential':
+      // Android: no Google account on device, or app not registered in Google Cloud (missing Android OAuth client with package name + SHA-1)
       break;
     case 'not_configured':
       // Not configured
@@ -319,9 +322,10 @@ try {
 
 ### Common Issues
 
-1. **"No client ID found"**: Ensure configuration files are in the correct location
-2. **"No activity available"**: Make sure the app is in the foreground
-3. **"TurboModule not found"**: Ensure New Architecture is enabled
+1. **"No client ID found"**: Ensure configuration files are in the correct location or pass `webClientId` in `configure()`.
+2. **"No activity available"**: Make sure the app is in the foreground.
+3. **"TurboModule not found"**: Ensure New Architecture is enabled.
+4. **Android: "No Google account found" / `NoCredentialException`** (even with an account on the device): Your app must have an **Android OAuth client** in Google Cloud with this app’s **package name** and **SHA-1**. See [Android Setup](#android-setup) above.
 
 ### Enable New Architecture
 
@@ -335,9 +339,14 @@ newArchEnabled=true
 
 ### Android Setup
 
-1. Place `google-services.json` in `android/app/`
-2. Ensure Google Play Services is installed
-3. Add a Google account in device settings
+1. Place `google-services.json` in `android/app/` (required for automatic config; optional if you pass `webClientId` in `configure()`).
+2. Ensure Google Play Services is installed on the device or emulator.
+3. Add a Google account in device settings (Settings → Accounts → Add account → Google) so the user can sign in.
+4. **Create an Android OAuth client** in [Google Cloud Console](https://console.cloud.google.com/apis/credentials) (same project as your Web client ID):
+   - **Create credentials** → **OAuth client ID** → Application type **Android**
+   - **Package name:** your app’s `applicationId` from `android/app/build.gradle`
+   - **SHA-1:** run `cd android && ./gradlew signingReport` (use the fingerprint for the build type you run, e.g. debug)
+   - Without this, you can get **"No Google account found"** / `NoCredentialException` even when the device has a Google account, because the app is not authorized for sign-in.
 
 ### iOS Setup
 

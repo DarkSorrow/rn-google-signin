@@ -82,6 +82,32 @@ You've successfully run and modified your React Native App. :partying_face:
 - If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
 - If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
 
+# Google Sign-In (Android)
+
+This example uses **Credential Manager** for sign-in. Even if your device has a Google account and other apps can sign in, **this app** must be registered in Google Cloud with its own Android OAuth client.
+
+1. **Get this app’s SHA-1** (debug build):
+   ```sh
+   cd android && ./gradlew signingReport
+   ```
+   Or with keytool:
+   ```sh
+   keytool -list -v -keystore app/debug.keystore -alias androiddebugkey -storepass android -keypass android
+   ```
+   Copy the **SHA-1** from the output.
+
+2. **In [Google Cloud Console](https://console.cloud.google.com/apis/credentials)** (same project as your Web client ID):
+   - **Create credentials** → **OAuth client ID**
+   - Application type: **Android**
+   - Name: e.g. `RnGoogleSignin Example (Debug)`
+   - Package name: **`novasteraoss.rngooglesignin.example`**
+   - SHA-1: paste the fingerprint from step 1
+   - Create
+
+3. Use the **same Web client ID** in the app as you use for your other clients (already in `App.tsx`). No need to create a new Web client; the Android client just links this app’s package + SHA-1 to your project so Credential Manager can offer sign-in.
+
+If you see “No Google account found” or `NoCredentialException` despite having an account on the device, the usual cause is a missing or wrong Android OAuth client for this package name and SHA-1.
+
 # Troubleshooting
 
 If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
