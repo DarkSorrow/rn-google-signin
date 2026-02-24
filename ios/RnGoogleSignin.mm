@@ -135,6 +135,7 @@ RCT_EXPORT_MODULE()
         [signIn signInWithPresentingViewController:presentingViewController
                                             hint:nonce
                                   additionalScopes:scopes
+                                  nonce:nonce
                                         completion:^(GIDSignInResult * _Nullable result, NSError * _Nullable error) {
             if (error) {
                 NSString *errorCode = @"sign_in_error";
