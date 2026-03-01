@@ -84,7 +84,7 @@ dependencies {
   
   // Google Play Services - Updated to latest versions
   implementation "com.google.android.gms:play-services-identity:18.1.0"
-  implementation "com.google.android.gms:play-services-auth:21.5.0"
+  implementation "com.google.android.gms:play-services-auth:21.5.1"
   
 }
 
