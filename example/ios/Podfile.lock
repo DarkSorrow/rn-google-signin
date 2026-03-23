@@ -15,12 +15,12 @@ PODS:
   - FBLazyVector (0.81.4)
   - fmt (11.0.2)
   - glog (0.3.5)
-  - GoogleSignIn (9.0.0):
+  - GoogleSignIn (9.1.0):
     - AppAuth (~> 2.0)
     - AppCheckCore (~> 11.0)
     - GTMAppAuth (~> 5.0)
     - GTMSessionFetcher/Core (~> 3.3)
-  - GoogleSignInSwiftSupport (9.0.0):
+  - GoogleSignInSwiftSupport (9.1.0):
     - GoogleSignIn (~> 9.0)
   - GoogleUtilities/Environment (8.1.0):
     - GoogleUtilities/Privacy
@@ -2290,8 +2290,8 @@ PODS:
     - fast_float
     - fmt
     - glog
-    - GoogleSignIn (~> 9.0)
-    - GoogleSignInSwiftSupport (~> 9.0)
+    - GoogleSignIn (~> 9.1)
+    - GoogleSignInSwiftSupport (~> 9.1)
     - hermes-engine
     - RCT-Folly
     - RCT-Folly/Fabric
@@ -2561,8 +2561,8 @@ SPEC CHECKSUMS:
   FBLazyVector: 941bef1c8eeabd9fe1f501e30a5220beee913886
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
-  GoogleSignIn: c7f09cfbc85a1abf69187be091997c317cc33b77
-  GoogleSignInSwiftSupport: bac3baa0ab3617dc69011f548ee985fddc694e05
+  GoogleSignIn: fcee2257188d5eda57a5e2b6a715550ffff9206d
+  GoogleSignInSwiftSupport: aca902e4e15b234611ecac74ef5c8f61278f774e
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
@@ -2631,7 +2631,7 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: b20fba6c3d091a393925890009999472c8f94d95
   ReactCodegen: 58dc2eb138a27145826ad7d5568610159dfcadee
   ReactCommon: 00df7b9f859c9d02181844255bb89a8bca544374
-  RnGoogleSignin: 0bf10f4bbfd30ed1c3e0350b87d9a27dc8b38ef2
+  RnGoogleSignin: 9b0762c3b375c4efb41048c86a18f78ebb05f2e5
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 922d794dce2af9c437f864bf4093abfa7a131adb
 
