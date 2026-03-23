@@ -62,6 +62,13 @@ RCT_EXPORT_MODULE()
                 }
             }
         }
+
+        // Store account hint (typically user email) for sign-in if provided
+        if (config.accountName() && config.accountName().length > 0) {
+            objc_setAssociatedObject(self, "defaultAccountName", config.accountName(), OBJC_ASSOCIATION_COPY_NONATOMIC);
+        } else {
+            objc_setAssociatedObject(self, "defaultAccountName", nil, OBJC_ASSOCIATION_COPY_NONATOMIC);
+        }
     }
     @catch (NSException *exception) {
         RCTLogError(@"[RnGoogleSignin] configure crashed: %@", exception);
@@ -123,6 +130,12 @@ RCT_EXPORT_MODULE()
                 scopes = @[@"profile", @"openid"];
             }
         }
+
+        // Account hint should be an email if provided; otherwise nil
+        NSString *hint = objc_getAssociatedObject(self, "defaultAccountName");
+        if (hint.length == 0) {
+            hint = nil;
+        }
         
         // Validate GIDSignIn instance
         GIDSignIn *signIn = [GIDSignIn sharedInstance];
@@ -133,7 +146,7 @@ RCT_EXPORT_MODULE()
         
         // Perform sign in with comprehensive error handling
         [signIn signInWithPresentingViewController:presentingViewController
-                                            hint:nonce
+                                            hint:hint
                                   additionalScopes:scopes
                                   nonce:nonce
                                         completion:^(GIDSignInResult * _Nullable result, NSError * _Nullable error) {
