@@ -78,8 +78,8 @@ dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
   
   // Modern Google Identity APIs - Updated to latest versions
-  implementation "androidx.credentials:credentials:1.5.0"
-  implementation "androidx.credentials:credentials-play-services-auth:1.5.0"
+  implementation "androidx.credentials:credentials:1.6.0"
+  implementation "androidx.credentials:credentials-play-services-auth:1.6.0"
   implementation "com.google.android.libraries.identity.googleid:googleid:1.2.0"
   
   // Google Play Services - Updated to latest versions
