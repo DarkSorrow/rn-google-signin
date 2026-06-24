@@ -109,10 +109,11 @@ const withGoogleSigninAutomatic = (config: any) => {
     AndroidConfig.GoogleServices.withClassPath,
     AndroidConfig.GoogleServices.withApplyPlugin,
     AndroidConfig.GoogleServices.withGoogleServicesFile,
-    
-    // iOS - handle GoogleService-Info.plist
+
+    // iOS - handle GoogleService-Info.plist and register its REVERSED_CLIENT_ID as a URL scheme
     IOSConfig.Google.withGoogleServicesFile,
-    
+    IOSConfig.Google.withGoogle,
+
     // Add required metadata for both platforms
     withGoogleSigninAndroidManifest,
   ]);

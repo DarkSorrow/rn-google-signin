@@ -1,1 +1,1 @@
-{"root":["./example/src/app.tsx","./expo-plugin/src/withgooglesignin.ts","./src/nativerngooglesignin.ts","./src/index.tsx","./src/__tests__/index.test.tsx"],"version":"5.8.3"}
+{"root":["./example/src/app.tsx","./expo-plugin/build/withgooglesignin.d.ts","./expo-plugin/src/withgooglesignin.ts","./lib/typescript/src/nativerngooglesignin.d.ts","./lib/typescript/src/index.d.ts","./src/nativerngooglesignin.ts","./src/index.tsx","./src/__tests__/index.test.tsx"],"errors":true,"version":"6.0.3"}

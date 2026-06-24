@@ -81,6 +81,20 @@ updates:
       # Ignore ALL version updates for React in example - should match main library
       - dependency-name: "react"
         update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      # Ignore ALL version updates for React Native specific packages - must match React Native version
+      - dependency-name: "@react-native/babel-preset"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "@react-native/metro-config"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "@react-native/typescript-config"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      # Ignore minor/major version updates for React Native CLI - must be compatible with React Native version
+      - dependency-name: "@react-native-community/cli"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "@react-native-community/cli-platform-android"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "@react-native-community/cli-platform-ios"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
 
   # Android Gradle dependencies
   - package-ecosystem: "gradle"

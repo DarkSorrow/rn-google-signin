@@ -20,8 +20,8 @@ Pod::Spec.new do |s|
   s.static_framework = true
 
   # Use official Google Sign-In SDK from remote repository
-  s.dependency "GoogleSignIn", "~> 9.1"
-  s.dependency "GoogleSignInSwiftSupport", "~> 9.1"
+  s.dependency "GoogleSignIn", "~> 9.2"
+  s.dependency "GoogleSignInSwiftSupport", "~> 9.2"
 
   install_modules_dependencies(s)
 end
