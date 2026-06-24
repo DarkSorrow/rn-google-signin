@@ -14,6 +14,7 @@ The `@novastera-oss/rn-google-signin` module includes an Expo config plugin that
 2. **Configures Info.plist**: Adds required entries to your app's `Info.plist`:
    - `GIDClientID`: The Google client ID for iOS
    - `CFBundleURLTypes`: URL schemes for Google Sign-In and deep linking
+3. **Configures Podfile for modular headers**: Adds `pod 'GoogleUtilities', :modular_headers => true` (and the same for `RecaptchaInterop` and `AppCheckCore`) to your app target in `ios/Podfile`. GoogleSignIn's transitive dependency `AppCheckCore` is a Swift pod whose own dependencies don't define modules, which CocoaPods requires when building as static libraries (the default unless you use `use_frameworks!`). Without this, `pod install` fails with "cannot yet be integrated as static libraries". This step is skipped if those pods are already declared elsewhere in your Podfile.
 
 ### Android Configuration
 
@@ -125,6 +126,10 @@ your-expo-project/
 
 **Solution**: Add your `google-services.json` file to the `android/app/` directory of your Expo project.
 
+#### "The following Swift pods cannot yet be integrated as static libraries" (mentioning `AppCheckCore`, `GoogleUtilities`, or `RecaptchaInterop`)
+
+**Solution**: This should be handled automatically by the plugin (see iOS Configuration above). If you still hit it, check whether your `ios/Podfile` already declares `GoogleUtilities`, `RecaptchaInterop`, or `AppCheckCore` elsewhere (e.g. for Firebase) without `:modular_headers => true` — the plugin skips adding its own line if it finds an existing declaration, to avoid a duplicate-pod error. In that case, add `:modular_headers => true` to your existing declaration manually and re-run `pod install`.
+
 #### Plugin Configuration Errors
 
 **Solution**: Ensure your `app.json` has the correct plugin configuration:
@@ -151,7 +156,7 @@ To test the plugin locally:
 
 ### Plugin Source
 
-The plugin source is located at `src/withRNGoogleSignin.ts` and exposes the configuration through `app.plugin.js`.
+The plugin source is located at `expo-plugin/src/withGoogleSignIn.ts` and exposes the configuration through `app.plugin.js`.
 
 ## Migration from Manual Configuration
 

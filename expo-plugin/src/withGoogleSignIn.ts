@@ -9,9 +9,43 @@ const {
   withInfoPlist,
   withPlugins,
   withAndroidManifest,
+  withDangerousMod,
 } = require('@expo/config-plugins');
-const { readFileSync } = require('fs');
+const { readFileSync, writeFileSync } = require('fs');
 const { join } = require('path');
+
+// GoogleSignIn >= 9.2 pulls in AppCheckCore (Swift), which depends on
+// GoogleUtilities and RecaptchaInterop. Those pods don't define modules,
+// so CocoaPods can't import them from a Swift pod when building as static
+// libraries (the RN/Expo default, i.e. no use_frameworks!). Without this,
+// `pod install` fails with "cannot yet be integrated as static libraries".
+const MODULAR_HEADERS_PODS = ['GoogleUtilities', 'RecaptchaInterop', 'AppCheckCore'];
+
+// Add `pod 'X', :modular_headers => true` lines right inside the app target
+// block of the generated Podfile, once per pod.
+const withGoogleSigninPodfile = (config: any) => {
+  return withDangerousMod(config, [
+    'ios',
+    (config: any) => {
+      const podfilePath = join(config.modRequest.platformProjectRoot, 'Podfile');
+      let contents = readFileSync(podfilePath, 'utf8');
+
+      const linesToAdd = MODULAR_HEADERS_PODS.filter(
+        (pod) => !contents.includes(`pod '${pod}'`) && !contents.includes(`pod "${pod}"`),
+      ).map((pod) => `  pod '${pod}', :modular_headers => true`);
+
+      if (linesToAdd.length > 0) {
+        contents = contents.replace(
+          /(target\s+'[^']+'\s+do\n)/,
+          `$1${linesToAdd.join('\n')}\n`,
+        );
+        writeFileSync(podfilePath, contents);
+      }
+
+      return config;
+    },
+  ]);
+};
 
 // Plugin options interface - for manual configuration
 interface GoogleSigninOptions {
@@ -97,6 +131,8 @@ const withGoogleSigninManual = (config: any, options: GoogleSigninOptions) => {
   return withPlugins(config, [
     // iOS - add URL scheme manually
     (cfg: any) => withGoogleUrlScheme(cfg, options),
+    // iOS - modular headers required by GoogleSignIn's transitive deps
+    withGoogleSigninPodfile,
     // Android - add required metadata
     withGoogleSigninAndroidManifest,
   ]);
@@ -113,6 +149,9 @@ const withGoogleSigninAutomatic = (config: any) => {
     // iOS - handle GoogleService-Info.plist and register its REVERSED_CLIENT_ID as a URL scheme
     IOSConfig.Google.withGoogleServicesFile,
     IOSConfig.Google.withGoogle,
+
+    // iOS - modular headers required by GoogleSignIn's transitive deps
+    withGoogleSigninPodfile,
 
     // Add required metadata for both platforms
     withGoogleSigninAndroidManifest,

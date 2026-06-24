@@ -326,6 +326,18 @@ try {
 2. **"No activity available"**: Make sure the app is in the foreground.
 3. **"TurboModule not found"**: Ensure New Architecture is enabled.
 4. **Android: "No Google account found" / `NoCredentialException`** (even with an account on the device): Your app must have an **Android OAuth client** in Google Cloud with this app’s **package name** and **SHA-1**. See [Android Setup](#android-setup) above.
+5. **iOS: `pod install` fails with "The following Swift pods cannot yet be integrated as static libraries"** mentioning `AppCheckCore`, `GoogleUtilities`, or `RecaptchaInterop`: GoogleSignIn's transitive dependencies don't define Swift modules, which CocoaPods requires when building as static libraries (the default unless your app uses `use_frameworks!`). Add the following inside your app target in `ios/Podfile`, then re-run `pod install`:
+
+   ```ruby
+   target 'YourApp' do
+     pod 'GoogleUtilities', :modular_headers => true
+     pod 'RecaptchaInterop', :modular_headers => true
+     pod 'AppCheckCore', :modular_headers => true
+     # ... rest of your target
+   end
+   ```
+
+   Expo projects don't need to do this manually — the config plugin adds these lines automatically during `expo prebuild`.
 
 ### Enable New Architecture
 

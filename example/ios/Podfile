@@ -19,6 +19,14 @@ end
 target 'RnGoogleSigninExample' do
   config = use_native_modules!
 
+  # GoogleSignIn 9.2 pulls in AppCheckCore (Swift), which depends on
+  # GoogleUtilities and RecaptchaInterop. Those don't define modules,
+  # so they need modular headers to be importable from a Swift pod
+  # when building as static libraries (no use_frameworks!).
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'RecaptchaInterop', :modular_headers => true
+  pod 'AppCheckCore', :modular_headers => true
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
