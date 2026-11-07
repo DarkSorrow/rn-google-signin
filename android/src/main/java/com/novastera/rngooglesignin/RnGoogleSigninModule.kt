@@ -368,14 +368,24 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             return
         }
 
-        // GetSignInWithGoogleOption is the "Sign in with Google" button flow: the chooser lists every
-        // account on the device and offers "Add another account". GetGoogleIdOption is the One Tap
-        // flow, which only lists existing accounts and fails with NoCredentialException when there are none.
-        val googleIdOption = GetSignInWithGoogleOption.Builder(currentWebClientId)
-            .setNonce(nonce)
-            .build()
+        // oneTap keeps the bottom sheet. The default chooser can add an account.
+        val oneTap = options
+            ?.takeIf { it.hasKey("oneTap") && !it.isNull("oneTap") }
+            ?.getBoolean("oneTap") ?: false
+        val credentialOption = if (oneTap) {
+            GetGoogleIdOption.Builder()
+                .setServerClientId(currentWebClientId)
+                .setFilterByAuthorizedAccounts(false)
+                .setAutoSelectEnabled(false)
+                .setNonce(nonce)
+                .build()
+        } else {
+            GetSignInWithGoogleOption.Builder(currentWebClientId)
+                .setNonce(nonce)
+                .build()
+        }
         val request = GetCredentialRequest.Builder()
-            .addCredentialOption(googleIdOption)
+            .addCredentialOption(credentialOption)
             .build()
 
         // Use activity context for the operation, with fallback to application context

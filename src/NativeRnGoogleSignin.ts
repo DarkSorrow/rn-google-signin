@@ -91,6 +91,15 @@ export interface SignInParams {
    * Nonce for security (will be auto-generated if not provided)
    */
   nonce?: string;
+
+  /**
+   * Show the One Tap bottom sheet instead of the account chooser.
+   * The bottom sheet lists Google accounts already on the device.
+   * Omitted or `false` uses the Sign in with Google chooser, which can add an account.
+   * Ignored on iOS.
+   * @platform Android
+   */
+  oneTap?: boolean;
 }
 
 export interface AddScopesParams {
@@ -178,8 +187,9 @@ export interface Spec extends TurboModule {
   configure(config: ConfigureParams): void;
 
   /**
-   * Sign in with Google
-   * Shows the sign-in UI to the user
+   * Sign in with Google.
+   * Android shows the account chooser. Pass `{ oneTap: true }` for the One Tap bottom sheet.
+   * iOS shows the Google sign-in sheet and ignores `oneTap`.
    */
   signIn(options: SignInParams | null): Promise<SignInResponse>;
 

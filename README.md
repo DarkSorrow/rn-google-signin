@@ -31,6 +31,7 @@ A modern, high-performance React Native Google Sign-In library built exclusively
 - **Android uses `play-services-auth` 22.0.0**, which removed the legacy `GoogleSignIn` / `GoogleSignInClient` APIs. This library doesn't use them, but other libraries in your app that still do will break at runtime.
 - **iOS `getTokens()`** now rejects with `sign_in_required` when the refresh token has expired.
 - **Android `hasPlayServices({})`** no longer throws when `showPlayServicesUpdateDialog` is omitted.
+- **Android `signIn()` opens the Sign in with Google account chooser**, including "Add another account". Pass `{ oneTap: true }` to keep the previous One Tap bottom sheet. iOS ignores `oneTap`.
 - Contributing to this repository requires Node 22.13+ or 24.3+.
 
 ## Quick Start
