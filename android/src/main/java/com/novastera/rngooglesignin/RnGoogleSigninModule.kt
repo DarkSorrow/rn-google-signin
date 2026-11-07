@@ -19,6 +19,7 @@ import com.facebook.react.module.annotations.ReactModule
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import org.json.JSONObject
@@ -367,10 +368,10 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             return
         }
 
-        val googleIdOption = GetGoogleIdOption.Builder()
-            .setServerClientId(currentWebClientId)
-            .setFilterByAuthorizedAccounts(false)
-            .setAutoSelectEnabled(false)  // Prevent auto-selection, show picker
+        // GetSignInWithGoogleOption is the "Sign in with Google" button flow: the chooser lists every
+        // account on the device and offers "Add another account". GetGoogleIdOption is the One Tap
+        // flow, which only lists existing accounts and fails with NoCredentialException when there are none.
+        val googleIdOption = GetSignInWithGoogleOption.Builder(currentWebClientId)
             .setNonce(nonce)
             .build()
         val request = GetCredentialRequest.Builder()
