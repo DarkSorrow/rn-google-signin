@@ -106,6 +106,10 @@ export interface HasPlayServicesParams {
 }
 
 export interface User {
+  /**
+   * Google account ID (the OpenID `sub` claim). Stable and never reused,
+   * use this (not email) as the user identifier.
+   */
   id: string;
   name: string | null;
   email: string;

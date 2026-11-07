@@ -2,19 +2,24 @@
   "dependencies": {
     "googleSignIn": {
       "ios": {
-        "version": "9.0.0",
-        "commit": "3996d908c7b3ce8a87d39c808f9a6b2a08fbe043",
+        "version": "10.1.0",
+        "commit": "bfaebbc04a4d13ed7a89b0fc1fb8ad66b362cc1c",
         "repository": "https://github.com/google/GoogleSignIn-iOS"
       },
       "android": {
-        "playServicesAuth": "20.7.0",
-        "credentials": "1.2.2",
-        "credentialsPlayServicesAuth": "1.2.2",
-        "googleId": "1.1.0"
+        "playServicesAuth": "22.0.0",
+        "playServicesIdentity": "18.1.0",
+        "credentials": "1.6.0",
+        "credentialsPlayServicesAuth": "1.6.0",
+        "googleId": "1.2.0"
       }
     },
     "reactNative": {
-      "minVersion": "0.78.0"
+      "minVersion": "0.79.0",
+      "testedVersion": "0.88.1"
+    },
+    "expo": {
+      "testedSdk": "58"
     }
   }
-} 
+}

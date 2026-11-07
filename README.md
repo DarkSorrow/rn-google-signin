@@ -19,10 +19,19 @@ A modern, high-performance React Native Google Sign-In library built exclusively
 
 ## Requirements
 
-- **React Native 0.79+** with New Architecture enabled
-- **iOS 15.1+**
-- **Android API 24+**
+- **React Native 0.79+** with New Architecture enabled (tested with React Native 0.88 and Expo SDK 58)
+- **iOS 15.1+** (GoogleSignIn-iOS 10.1)
+- **Android API 24+** (Credential Manager 1.6, Sign in with Google 1.2.0)
 - **Google Play Services** (Android)
+
+## Migrating to 3.0.0
+
+- **Android `user.id` is now the Google account ID (`sub`)**, matching iOS. Previous versions returned the email address as `user.id` on Android. If you stored `user.id` from Android, migrate those records (the email is still available as `user.email`). Backends should keep identifying users by the `sub` of the verified ID token.
+- **iOS uses GoogleSignIn 10.1**, which requires iOS 15.0+ and pulls in AppAuth 3 / GTMAppAuth 6. Run `pod update GoogleSignIn` after upgrading. The unused `GoogleSignInSwiftSupport` pod is no longer a dependency.
+- **Android uses `play-services-auth` 22.0.0**, which removed the legacy `GoogleSignIn` / `GoogleSignInClient` APIs. This library doesn't use them, but other libraries in your app that still do will break at runtime.
+- **iOS `getTokens()`** now rejects with `sign_in_required` when the refresh token has expired.
+- **Android `hasPlayServices({})`** no longer throws when `showPlayServicesUpdateDialog` is omitted.
+- Contributing to this repository requires Node 22.13+ or 24.3+.
 
 ## Quick Start
 
@@ -226,6 +235,7 @@ Add the plugin with options to your `app.json` or `app.config.js`:
 | Feature | iOS | Android | Notes |
 |---------|-----|---------|-------|
 | Basic Sign-In | ✅ | ✅ | |
+| `user.id` is Google `sub` | ✅ | ✅ | Android: read from the ID token since 3.0.0 |
 | Sign Out | ✅ | ✅ | |
 | Get Current User | ✅ | ✅ | |
 | isSignedIn | ✅ | ⚠️ | Android: may trigger credential picker UI |
@@ -270,7 +280,7 @@ interface ConfigureParams {
 
 ```typescript
 interface User {
-  id: string;
+  id: string;           // Google account ID (OpenID `sub`), stable - use this, not email, as the identifier
   name: string;
   email: string;
   photo?: string;
@@ -338,6 +348,18 @@ try {
    ```
 
    Expo projects don't need to do this manually — the config plugin adds these lines automatically during `expo prebuild`.
+6. **iOS (Xcode 27+): build fails with "The iOS Simulator deployment target 'IPHONEOS_DEPLOYMENT_TARGET' is set to 9.0, but the range of supported deployment target versions is 15.0 to ..."** for targets such as `GoogleUtilities-GoogleUtilities_Privacy` or `PromisesObjC-FBLPromises_Privacy`: these resource bundles of GoogleSignIn's transitive dependencies still declare old deployment targets, and `react_native_post_install` doesn't raise them. Add this after `react_native_post_install(...)` in your Podfile's `post_install` block:
+
+   ```ruby
+   installer.pods_project.targets.each do |target|
+     target.build_configurations.each do |build_config|
+       current = build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+       if current.nil? || current.to_f < min_ios_version_supported.to_f
+         build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = min_ios_version_supported
+       end
+     end
+   end
+   ```
 
 ### Enable New Architecture
 

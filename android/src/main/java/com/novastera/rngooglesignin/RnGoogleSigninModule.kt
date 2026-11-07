@@ -3,12 +3,15 @@ package com.novastera.rngooglesignin
 import android.app.Activity
 import android.content.Intent
 import android.os.Build
+import android.util.Base64
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.CredentialManagerCallback
 import androidx.credentials.exceptions.ClearCredentialException
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialResponse
 import com.facebook.react.bridge.*
@@ -18,8 +21,8 @@ import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
+import org.json.JSONObject
 import java.security.SecureRandom
-import java.util.Base64
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
 import java.lang.ref.WeakReference
@@ -31,7 +34,10 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
     companion object {
         const val NAME = "RnGoogleSignin"
         private const val NONCE_LENGTH = 32
+        private const val BASE64_URL_FLAGS = Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP
     }
+
+    private class MissingSubjectException : Exception("Google ID token has no subject (sub) claim")
 
     // Thread-safe configuration state
     @Volatile
@@ -67,12 +73,31 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
     // MARK: - Helper Methods
 
     /**
-     * Creates a standardized user response map from GoogleIdTokenCredential
+     * Reads the `sub` claim (stable Google account ID) from the ID token payload.
+     * The signature is not verified here; backends must still verify the token.
+     */
+    private fun extractSubject(idToken: String): String {
+        val parts = idToken.split(".")
+        if (parts.size != 3) throw MissingSubjectException()
+        val sub = try {
+            val payload = String(Base64.decode(parts[1], Base64.URL_SAFE), Charsets.UTF_8)
+            JSONObject(payload).optString("sub")
+        } catch (e: Exception) {
+            throw MissingSubjectException()
+        }
+        if (sub.isEmpty()) throw MissingSubjectException()
+        return sub
+    }
+
+    /**
+     * Creates a standardized user response map from GoogleIdTokenCredential.
+     * `GoogleIdTokenCredential.id` is the email, so the user id comes from the token's `sub`.
      */
     private fun createUserResponse(idTokenCredential: GoogleIdTokenCredential): WritableMap {
+        val subject = extractSubject(idTokenCredential.idToken)
         return Arguments.createMap().apply {
             val userInfo = Arguments.createMap().apply {
-                putString("id", idTokenCredential.id ?: "")
+                putString("id", subject)
                 putString("name", idTokenCredential.displayName)
                 putString("email", idTokenCredential.id)
                 putString("photo", idTokenCredential.profilePictureUri?.toString())
@@ -302,7 +327,10 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
         val result = googleApiAvailability.isGooglePlayServicesAvailable(reactContext)
 
         if (result != ConnectionResult.SUCCESS) {
-            val showPlayServicesUpdateDialog = options?.getBoolean("showPlayServicesUpdateDialog") ?: false
+            val dialogKey = "showPlayServicesUpdateDialog"
+            val showPlayServicesUpdateDialog = options
+                ?.takeIf { it.hasKey(dialogKey) && !it.isNull(dialogKey) }
+                ?.getBoolean(dialogKey) ?: false
             if (showPlayServicesUpdateDialog && googleApiAvailability.isUserResolvableError(result)) {
                 val activity = getValidActivity()
                 activity?.let {
@@ -330,7 +358,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
         currentPromiseRef.getAndSet(promise)?.reject("cancelled", "Previous operation was cancelled by new request")
 
         // Use custom nonce if provided, otherwise generate one
-        nonce = options?.getString("nonce") ?: generateNonce()
+        nonce = options?.getString("nonce")?.takeIf { it.isNotEmpty() } ?: generateNonce()
 
         // Use Credential Manager for modern sign-in
         val currentWebClientId = webClientId
@@ -369,14 +397,18 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                         }
                     } catch (e: GoogleIdTokenParsingException) {
                         currentPromiseRef.getAndSet(null)?.reject("parsing_error", "Failed to parse Google ID token: ${e.message}", e)
+                    } catch (e: MissingSubjectException) {
+                        currentPromiseRef.getAndSet(null)?.reject("parsing_error", "Failed to parse Google ID token: ${e.message}", e)
                     } catch (e: Exception) {
                         currentPromiseRef.getAndSet(null)?.reject("sign_in_error", "Sign in failed: ${e.message}", e)
                     }
                 }
 
                 override fun onError(e: GetCredentialException) {
-                    // Handle different types of credential exceptions
+                    // Prefer exception types; message matching is a fallback for provider-specific errors
                     val errorCode = when {
+                        e is GetCredentialCancellationException -> "sign_in_cancelled"
+                        e is NoCredentialException -> "no_credential"
                         e.message?.contains("cancel", ignoreCase = true) == true -> "sign_in_cancelled"
                         e.message?.contains("no credential", ignoreCase = true) == true -> "no_credential"
                         e.message?.contains("network", ignoreCase = true) == true -> "network_error"
@@ -422,7 +454,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
             .setServerClientId(currentWebClientId)
             .setFilterByAuthorizedAccounts(true)
             .setAutoSelectEnabled(true)
-            .setNonce(nonce)
+            .setNonce(generateNonce())
             .build()
         val request = GetCredentialRequest.Builder()
             .addCredentialOption(googleIdOption)
@@ -447,6 +479,8 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
                             currentPromiseRef.getAndSet(null)?.reject("sign_in_required", "No user is currently signed in")
                         }
                     } catch (e: GoogleIdTokenParsingException) {
+                        currentPromiseRef.getAndSet(null)?.reject("parsing_error", "Failed to parse Google ID token: ${e.message}", e)
+                    } catch (e: MissingSubjectException) {
                         currentPromiseRef.getAndSet(null)?.reject("parsing_error", "Failed to parse Google ID token: ${e.message}", e)
                     } catch (e: Exception) {
                         currentPromiseRef.getAndSet(null)?.reject("sign_in_error", "Silent sign in failed: ${e.message}", e)
@@ -693,7 +727,7 @@ class RNGoogleSigninModule(private val reactContext: ReactApplicationContext) :
         val random = SecureRandom()
         val bytes = ByteArray(NONCE_LENGTH)
         random.nextBytes(bytes)
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+        return Base64.encodeToString(bytes, BASE64_URL_FLAGS)
     }
 
     /**

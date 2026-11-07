@@ -1,31 +1,15 @@
-buildscript {
-  ext.getExtOrDefault = {name ->
-    return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties['RnGoogleSignin_' + name]
-  }
-
-  repositories {
-    google()
-    mavenCentral()
-  }
-
-  dependencies {
-    classpath "com.android.tools.build:gradle:8.13.2"
-    // noinspection DifferentKotlinGradleVersion
-    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${getExtOrDefault('kotlinVersion')}"
-  }
-}
-
-apply plugin: "com.android.library"
-apply plugin: "kotlin-android"
-apply plugin: "com.facebook.react"
-
 def getExtOrIntegerDefault(name) {
   return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["RnGoogleSignin_" + name]).toInteger()
 }
 
-def safeExtGet(prop, fallback) {
-  rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+apply plugin: "com.android.library"
+
+// AGP 9 ships built-in Kotlin; only apply the standalone plugin when it isn't already active
+if (project.extensions.findByName("kotlin") == null) {
+  apply plugin: "kotlin-android"
 }
+
+apply plugin: "com.facebook.react"
 
 android {
   namespace "com.novastera.rngooglesignin"
@@ -34,7 +18,6 @@ android {
 
   defaultConfig {
     minSdkVersion getExtOrIntegerDefault("minSdkVersion")
-    targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
   }
 
   buildFeatures {
@@ -47,13 +30,8 @@ android {
     }
   }
 
-  lintOptions {
+  lint {
     disable "GradleCompatible"
-  }
-
-  compileOptions {
-    sourceCompatibility JavaVersion.VERSION_1_8
-    targetCompatibility JavaVersion.VERSION_1_8
   }
 
   sourceSets {
@@ -71,21 +49,18 @@ repositories {
   google()
 }
 
-def kotlin_version = getExtOrDefault("kotlinVersion")
-
 dependencies {
   implementation "com.facebook.react:react-android"
-  implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-  
-  // Modern Google Identity APIs - Updated to latest versions
+
+  // Credential Manager + Sign in with Google
   implementation "androidx.credentials:credentials:1.6.0"
   implementation "androidx.credentials:credentials-play-services-auth:1.6.0"
+  // googleid 1.2.1 ships Kotlin 2.4 metadata, which RN 0.88's Kotlin 2.2 compiler can't read.
   implementation "com.google.android.libraries.identity.googleid:googleid:1.2.0"
-  
-  // Google Play Services - Updated to latest versions
+
+  // Google Play Services (22.x removed the legacy GoogleSignIn APIs, which this module doesn't use)
   implementation "com.google.android.gms:play-services-identity:18.1.0"
-  implementation "com.google.android.gms:play-services-auth:21.6.0"
-  
+  implementation "com.google.android.gms:play-services-auth:22.0.0"
 }
 
 react {

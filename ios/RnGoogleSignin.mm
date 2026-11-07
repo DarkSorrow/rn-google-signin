@@ -8,6 +8,15 @@
 
 RCT_EXPORT_MODULE()
 
+// GIDSignIn presents UI and must be driven from the main thread.
+- (dispatch_queue_t)methodQueue {
+  return dispatch_get_main_queue();
+}
+
++ (BOOL)requiresMainQueueSetup {
+  return NO;
+}
+
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:(const facebook::react::ObjCTurboModule::InitParams &)params {
   return std::make_shared<facebook::react::NativeRnGoogleSigninSpecJSI>(params);
 }
@@ -47,7 +56,8 @@ RCT_EXPORT_MODULE()
         
         [GIDSignIn sharedInstance].configuration = gidConfig;
         
-        // Handle scopes safely
+        // Handle scopes safely; reset so a reconfigure without scopes doesn't keep stale ones
+        objc_setAssociatedObject(self, "defaultScopes", nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         if (config.scopes().has_value()) {
             auto scopes = config.scopes().value();
             if (!scopes.empty()) {
@@ -121,6 +131,10 @@ RCT_EXPORT_MODULE()
         // Generate nonce if not provided
         if (!nonce || nonce.length == 0) {
             nonce = [self generateNonce];
+            if (!nonce) {
+                reject(@"sign_in_error", @"Failed to generate a secure nonce", nil);
+                return;
+            }
         }
         
         // Fallback to default scopes if none provided
@@ -154,10 +168,10 @@ RCT_EXPORT_MODULE()
                 NSString *errorCode = @"sign_in_error";
                 NSString *errorMessage = error.localizedDescription ?: @"Unknown sign in error";
                 
-                if (error.code == kGIDSignInErrorCodeCanceled) {
+                if ([self isGIDError:error code:kGIDSignInErrorCodeCanceled]) {
                     errorCode = @"sign_in_cancelled";
                     errorMessage = @"User cancelled the sign in";
-                } else if (error.code == kGIDSignInErrorCodeHasNoAuthInKeychain) {
+                } else if ([self isGIDError:error code:kGIDSignInErrorCodeHasNoAuthInKeychain]) {
                     errorCode = @"sign_in_required";
                     errorMessage = @"No previous sign in found";
                 }
@@ -205,7 +219,7 @@ RCT_EXPORT_MODULE()
                 NSString *errorCode = @"sign_in_error";
                 NSString *errorMessage = error.localizedDescription ?: @"Unknown sign in error";
                 
-                if (error.code == kGIDSignInErrorCodeHasNoAuthInKeychain) {
+                if ([self isGIDError:error code:kGIDSignInErrorCodeHasNoAuthInKeychain]) {
                     errorCode = @"sign_in_required";
                     errorMessage = @"No previous sign in found";
                 }
@@ -276,7 +290,7 @@ RCT_EXPORT_MODULE()
                 NSString *errorCode = @"sign_in_error";
                 NSString *errorMessage = error.localizedDescription ?: @"Unknown error adding scopes";
                 
-                if (error.code == kGIDSignInErrorCodeCanceled) {
+                if ([self isGIDError:error code:kGIDSignInErrorCodeCanceled]) {
                     errorCode = @"sign_in_cancelled";
                     errorMessage = @"User cancelled adding scopes";
                 }
@@ -423,6 +437,10 @@ RCT_EXPORT_MODULE()
         
         [currentUser refreshTokensIfNeededWithCompletion:^(GIDGoogleUser * _Nullable user, NSError * _Nullable error) {
             if (error) {
+                if ([self isGIDError:error code:kGIDSignInErrorCodeRefreshTokenExpired]) {
+                    reject(@"sign_in_required", @"Session expired, please sign in again", error);
+                    return;
+                }
                 reject(@"sign_in_error", error.localizedDescription ?: @"Failed to refresh tokens", error);
                 return;
             }
@@ -528,7 +546,7 @@ RCT_EXPORT_MODULE()
     }
 }
 
-- (NSString *)generateNonce {
+- (nullable NSString *)generateNonce {
     @try {
         NSMutableData *data = [NSMutableData dataWithLength:32];
         int result = SecRandomCopyBytes(kSecRandomDefault, 32, data.mutableBytes);
@@ -546,9 +564,12 @@ RCT_EXPORT_MODULE()
     }
     @catch (NSException *exception) {
         RCTLogError(@"[RnGoogleSignin] generateNonce crashed: %@", exception);
-        // Return a simple fallback nonce
-        return @"fallback-nonce";
+        return nil;
     }
+}
+
+- (BOOL)isGIDError:(NSError *)error code:(GIDSignInErrorCode)code {
+    return [error.domain isEqualToString:kGIDSignInErrorDomain] && error.code == code;
 }
 
 - (UIViewController *)getTopViewController:(UIViewController *)base {
